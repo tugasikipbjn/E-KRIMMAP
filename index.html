@@ -34,7 +34,7 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* grid pattern (subtle) */
+  /* subtle pattern */
   body::before {
     content: '';
     position: fixed;
@@ -46,7 +46,7 @@
     z-index: 0;
   }
 
-  /* ─── NAVBAR (mobile-optimized, sentuh) ─── */
+  /* ─── NAVBAR (mobile-optimized) ─── */
   nav {
     position: fixed;
     top: 0; left: 0; right: 0;
@@ -103,7 +103,7 @@
   }
   .nav-cta:active { opacity: 0.75; transform: scale(0.97); }
 
-  /* hamburger (mobile dedicated) */
+  /* hamburger (mobile) */
   .nav-hamburger {
     display: none;
     flex-direction: column;
@@ -123,7 +123,6 @@
     transition: all 0.25s ease;
   }
 
-  /* drawer menu mobile-first */
   .nav-drawer {
     display: none;
     position: fixed;
@@ -139,9 +138,7 @@
     gap: 4px;
     box-shadow: 0 12px 24px rgba(0,0,0,0.5);
   }
-  .nav-drawer.open {
-    display: flex;
-  }
+  .nav-drawer.open { display: flex; }
   .nav-drawer a {
     font-family: 'Space Mono', monospace;
     font-size: 0.85rem;
@@ -158,10 +155,9 @@
     border-radius: 8px;
   }
   .nav-drawer a:active { background: rgba(0,220,255,0.08); color: var(--accent); }
-  .nav-drawer a:last-child { border-bottom: none; }
   .nav-drawer a.accent { color: var(--accent); }
 
-  /* ─── HERO (mobile touch) ─── */
+  /* ─── HERO SECTION (FIXED: judul tidak terpotong) ─── */
   .hero {
     position: relative;
     z-index: 1;
@@ -172,9 +168,11 @@
     justify-content: center;
     text-align: center;
     padding: 100px 20px 70px;
-    overflow: hidden;
+    margin-top: 0;
+    overflow: visible;
   }
 
+  /* radial glow */
   .hero::before {
     content: '';
     position: absolute;
@@ -203,25 +201,33 @@
   .hero-title {
     font-size: clamp(2rem, 11vw, 5rem);
     font-weight: 800;
-    line-height: 1.05;
+    line-height: 1.08;
     letter-spacing: -0.02em;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     animation: fadeUp 0.5s 0.08s ease both;
+    word-break: keep-all;
+    max-width: 95vw;
   }
+
+  /* baris kedua dengan outline unik */
   .hero-title .line2 {
     display: block;
     color: transparent;
-    -webkit-text-stroke: 1.2px rgba(0,220,255,0.65);
-    text-stroke: 1px rgba(0,220,255,0.65);
+    -webkit-text-stroke: 1.2px rgba(0,220,255,0.75);
+    text-stroke: 1px rgba(0,220,255,0.75);
+    margin-top: 4px;
   }
-  .hero-title .accent-word { color: var(--accent); }
+  .hero-title .accent-word { 
+    color: var(--accent);
+    display: inline-block;
+  }
 
   .hero-sub {
     font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     color: var(--muted);
-    max-width: 320px;
-    line-height: 1.7;
+    max-width: 340px;
+    line-height: 1.65;
     margin: 18px auto 32px;
     animation: fadeUp 0.5s 0.16s ease both;
     padding: 0 6px;
@@ -270,7 +276,7 @@
   }
   .btn-secondary:active { background: rgba(0,220,255,0.12); transform: scale(0.97); }
 
-  /* ─── STATS BAR (mobile) ─── */
+  /* ─── STATS BAR ─── */
   .stats-bar {
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
@@ -314,7 +320,7 @@
     width: 42px;
   }
 
-  /* ─── FEATURES (mobile 1kolom rapi) ─── */
+  /* FEATURES */
   .features {
     padding: 56px 18px;
     max-width: 1100px;
@@ -365,10 +371,7 @@
     transition: all 0.2s;
     border-radius: 8px;
   }
-  .feat-card:active {
-    background: var(--surface2);
-    transform: scale(0.99);
-  }
+  .feat-card:active { background: var(--surface2); transform: scale(0.99); }
   .feat-icon {
     width: 44px;
     height: 44px;
@@ -382,7 +385,6 @@
     border: 1px solid var(--border);
     border-radius: 12px;
   }
-
   .feat-title {
     font-size: 0.95rem;
     font-weight: 700;
@@ -395,7 +397,7 @@
     line-height: 1.7;
   }
 
-  /* ─── HOW IT WORKS (mobile flex column) ─── */
+  /* HOW IT WORKS */
   .how {
     padding: 56px 18px;
     background: var(--surface);
@@ -437,7 +439,6 @@
     border-radius: 14px;
     flex-shrink: 0;
   }
-
   .step-title {
     font-size: 0.95rem;
     font-weight: 700;
@@ -450,7 +451,7 @@
     line-height: 1.6;
   }
 
-  /* ─── CTA ─── */
+  /* CTA */
   .cta-section {
     padding: 70px 20px;
     text-align: center;
@@ -472,7 +473,7 @@
   }
   .cta-section .section-tag { justify-content: center; }
 
-  /* FOOTER mobile stack */
+  /* FOOTER */
   footer {
     border-top: 1px solid var(--border);
     padding: 28px 20px calc(20px + var(--safe-bottom));
@@ -513,13 +514,13 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* DESKTOP RESPONSIVE */
+  /* DESKTOP */
   @media (min-width: 640px) {
     nav { padding: 16px 36px; }
     .nav-hamburger { display: none !important; }
     .nav-links { display: flex !important; }
     .nav-cta { display: inline-block; }
-    .hero { padding: 130px 32px 80px; }
+    .hero { padding: 130px 32px 80px; min-height: 90vh; }
     .hero-sub { max-width: 500px; font-size: 0.8rem; }
     .stats-bar { grid-template-columns: repeat(4, 1fr); }
     .stat-item { border-bottom: none; }
@@ -548,21 +549,46 @@
     }
   }
 
-  /* touch target untuk link kecil di desktop tetap ramah */
+  /* MOBILE ONLY: judul tidak terpotong, pastikan padding + line-height */
   @media (max-width: 639px) {
     .nav-links, .nav-cta { display: none; }
     .nav-hamburger { display: flex; }
-    .hero-actions { gap: 12px; }
-    .btn-primary, .btn-secondary {
-      min-width: 130px;
-      padding: 12px 14px;
+    
+    .hero {
+      padding: 100px 16px 60px;
+      justify-content: center;
+    }
+    .hero-title {
+      font-size: clamp(1.85rem, 10vw, 2.8rem);
+      line-height: 1.12;
+      margin-bottom: 12px;
+      word-break: break-word;
+    }
+    .hero-title .line2 {
+      -webkit-text-stroke: 1px rgba(0,220,255,0.7);
+      margin-top: 2px;
+    }
+    .hero-sub {
       font-size: 0.68rem;
+      max-width: 290px;
+      margin: 14px auto 28px;
+    }
+    .hero-actions { gap: 10px; }
+    .btn-primary, .btn-secondary {
+      min-width: 125px;
+      padding: 11px 12px;
+      font-size: 0.65rem;
     }
     .feat-card { border-radius: 12px; }
     .step-num { width: 44px; height: 44px; min-width: 44px; }
   }
 
-  /* effect smooth */
+  /* untuk ponsel dengan notch & landscape kecil */
+  @media (max-height: 700px) and (max-width: 639px) {
+    .hero { padding: 80px 16px 40px; min-height: auto; }
+    .hero-title { font-size: 1.9rem; }
+  }
+
   a, button { -webkit-tap-highlight-color: transparent; }
   .stat-loading { animation: pulse 1.1s infinite; }
   @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
@@ -570,7 +596,7 @@
 </head>
 <body>
 
-<!-- NAVIGATION (mobile hamburger + drawer) -->
+<!-- NAVIGATION -->
 <nav>
   <div class="nav-logo">E-KRIMM<span>AP</span></div>
   <ul class="nav-links">
@@ -584,7 +610,7 @@
   </button>
 </nav>
 
-<!-- MOBILE DRAWER (touch friendly) -->
+<!-- MOBILE DRAWER -->
 <div class="nav-drawer" id="navDrawer">
   <a href="#fitur" onclick="closeDrawer()"><i class="fas fa-star fa-fw"></i> Fitur Unggulan</a>
   <a href="#cara-kerja" onclick="closeDrawer()"><i class="fas fa-circle-info fa-fw"></i> Cara Kerja</a>
@@ -592,7 +618,7 @@
   <a href="admin/admin.html" class="accent"><i class="fas fa-lock fa-fw"></i> Admin Panel</a>
 </div>
 
-<!-- HERO SECTION -->
+<!-- HERO SECTION - JUDUL TIDAK TERPOTONG -->
 <section class="hero">
   <div class="hero-badge">⬡ SISTEM INFORMASI GEOGRAFIS · BLORA</div>
   <h1 class="hero-title">
@@ -613,7 +639,7 @@
   </div>
 </section>
 
-<!-- STATS BAR (real-time dari sheet) -->
+<!-- STATS BAR -->
 <section class="stats-bar">
   <div class="stat-item">
     <div class="stat-num" id="ctr-total"><span class="stat-loading">···</span></div>
@@ -638,36 +664,12 @@
   <div class="section-tag">FITUR UTAMA</div>
   <h2 class="section-title">Dirancang untuk<br><span>Keamanan Wilayah</span></h2>
   <div class="features-grid">
-    <div class="feat-card">
-      <div class="feat-icon"><i class="fas fa-map-location-dot"></i></div>
-      <div class="feat-title">Peta Interaktif</div>
-      <div class="feat-desc">Visualisasi titik kriminalitas real-time dengan marker berwarna berdasarkan tingkat risiko.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon"><i class="fas fa-flag"></i></div>
-      <div class="feat-title">Laporan Warga</div>
-      <div class="feat-desc">Warga dapat melaporkan kejadian via form digital lengkap dengan koordinat & kategori.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon"><i class="fas fa-chart-pie"></i></div>
-      <div class="feat-title">Statistik</div>
-      <div class="feat-desc">Dashboard statistik dengan grafik distribusi kategori dan sebaran kecamatan.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon"><i class="fas fa-shield-halved"></i></div>
-      <div class="feat-title">Admin Panel</div>
-      <div class="feat-desc">Panel terproteksi untuk verifikasi laporan dan manajemen data kejadian.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon"><i class="fas fa-bell"></i></div>
-      <div class="feat-title">Notifikasi Live</div>
-      <div class="feat-desc">Notifikasi real-time saat ada laporan baru masuk di wilayah yang dipantau.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon"><i class="fas fa-mobile-screen"></i></div>
-      <div class="feat-title">Mobile Friendly</div>
-      <div class="feat-desc">Antarmuka responsif optimal di smartphone, tablet, hingga desktop.</div>
-    </div>
+    <div class="feat-card"><div class="feat-icon"><i class="fas fa-map-location-dot"></i></div><div class="feat-title">Peta Interaktif</div><div class="feat-desc">Visualisasi titik kriminalitas real-time dengan marker berwarna berdasarkan tingkat risiko.</div></div>
+    <div class="feat-card"><div class="feat-icon"><i class="fas fa-flag"></i></div><div class="feat-title">Laporan Warga</div><div class="feat-desc">Warga dapat melaporkan kejadian via form digital lengkap dengan koordinat & kategori.</div></div>
+    <div class="feat-card"><div class="feat-icon"><i class="fas fa-chart-pie"></i></div><div class="feat-title">Statistik</div><div class="feat-desc">Dashboard statistik dengan grafik distribusi kategori dan sebaran kecamatan.</div></div>
+    <div class="feat-card"><div class="feat-icon"><i class="fas fa-shield-halved"></i></div><div class="feat-title">Admin Panel</div><div class="feat-desc">Panel terproteksi untuk verifikasi laporan dan manajemen data kejadian.</div></div>
+    <div class="feat-card"><div class="feat-icon"><i class="fas fa-bell"></i></div><div class="feat-title">Notifikasi Live</div><div class="feat-desc">Notifikasi real-time saat ada laporan baru masuk di wilayah yang dipantau.</div></div>
+    <div class="feat-card"><div class="feat-icon"><i class="fas fa-mobile-screen"></i></div><div class="feat-title">Mobile Friendly</div><div class="feat-desc">Antarmuka responsif optimal di smartphone, tablet, hingga desktop.</div></div>
   </div>
 </section>
 
@@ -677,34 +679,10 @@
     <div class="section-tag">CARA KERJA</div>
     <h2 class="section-title">Proses <span>Sederhana</span>,<br>Dampak Nyata</h2>
     <div class="steps">
-      <div class="step">
-        <div class="step-num">01</div>
-        <div class="step-body">
-          <div class="step-title">Laporan Masuk</div>
-          <div class="step-desc">Warga melaporkan kejadian via form digital dengan kategori, lokasi, dan deskripsi kejadian.</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <div class="step-body">
-          <div class="step-title">Verifikasi Admin</div>
-          <div class="step-desc">Tim admin memeriksa dan memverifikasi laporan melalui panel yang terproteksi.</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <div class="step-body">
-          <div class="step-title">Tampil di Peta</div>
-          <div class="step-desc">Data yang terverifikasi langsung tampil sebagai marker di peta interaktif publik.</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">04</div>
-        <div class="step-body">
-          <div class="step-title">Ditindaklanjuti</div>
-          <div class="step-desc">Aparat keamanan memonitor peta dan merespons titik-titik rawan secara cepat.</div>
-        </div>
-      </div>
+      <div class="step"><div class="step-num">01</div><div class="step-body"><div class="step-title">Laporan Masuk</div><div class="step-desc">Warga melaporkan kejadian via form digital dengan kategori, lokasi, dan deskripsi kejadian.</div></div></div>
+      <div class="step"><div class="step-num">02</div><div class="step-body"><div class="step-title">Verifikasi Admin</div><div class="step-desc">Tim admin memeriksa dan memverifikasi laporan melalui panel yang terproteksi.</div></div></div>
+      <div class="step"><div class="step-num">03</div><div class="step-body"><div class="step-title">Tampil di Peta</div><div class="step-desc">Data yang terverifikasi langsung tampil sebagai marker di peta interaktif publik.</div></div></div>
+      <div class="step"><div class="step-num">04</div><div class="step-body"><div class="step-title">Ditindaklanjuti</div><div class="step-desc">Aparat keamanan memonitor peta dan merespons titik-titik rawan secara cepat.</div></div></div>
     </div>
   </div>
 </section>
@@ -732,28 +710,20 @@
 </footer>
 
 <script>
-  // MOBILE DRAWER FUNCTIONS
+  // Drawer
   function toggleDrawer() {
-    const drawer = document.getElementById('navDrawer');
-    drawer.classList.toggle('open');
-    const spans = document.querySelectorAll('.nav-hamburger span');
-    if (drawer.classList.contains('open')) {
-      // visual feedback (opsional)
-    }
+    document.getElementById('navDrawer').classList.toggle('open');
   }
   function closeDrawer() {
     document.getElementById('navDrawer').classList.remove('open');
   }
-  // tutup drawer saat klik di luar nav area
   document.addEventListener('click', (e) => {
     const nav = document.querySelector('nav');
     const drawer = document.getElementById('navDrawer');
-    if (!nav?.contains(e.target) && !drawer?.contains(e.target) && drawer.classList.contains('open')) {
-      closeDrawer();
-    }
+    if (!nav?.contains(e.target) && !drawer?.contains(e.target) && drawer.classList.contains('open')) closeDrawer();
   });
 
-  // ── AMBIL LIVE STATS DARI GOOGLE SHEETS (dengan fallback smooth)
+  // ── LIVE STATS dari Google Sheets ──
   const SHEET_API = 'https://script.google.com/macros/s/AKfycby8dIleiZo_zj0ufeKY_Ulp9632Me5xFdeX2mPV6G2qdM_Tf3P9WvrtLck02D4otYYJ/exec';
 
   function animateCounter(el, target, duration = 1200) {
@@ -761,68 +731,39 @@
     const stepVal = target / (duration / 16);
     const timer = setInterval(() => {
       start += stepVal;
-      if (start >= target) {
-        el.textContent = target;
-        clearInterval(timer);
-        return;
-      }
+      if (start >= target) { el.textContent = target; clearInterval(timer); return; }
       el.textContent = Math.floor(start);
     }, 16);
   }
 
   async function loadLiveStats() {
     try {
-      const url = SHEET_API + '?action=getVerified';
-      const res = await fetch(url);
+      const res = await fetch(SHEET_API + '?action=getVerified');
       const result = await res.json();
-
       if (result.success && Array.isArray(result.data)) {
         const data = result.data;
         const total = data.length;
         const tinggi = data.filter(d => d.severity === 'tinggi').length;
         const sedang = data.filter(d => d.severity === 'sedang').length;
-
         const elTotal = document.getElementById('ctr-total');
         const elTinggi = document.getElementById('ctr-tinggi');
         const elSedang = document.getElementById('ctr-sedang');
-
         if (elTotal && elTinggi && elSedang) {
-          elTotal.textContent = '0';
-          elTinggi.textContent = '0';
-          elSedang.textContent = '0';
-          animateCounter(elTotal, total);
-          animateCounter(elTinggi, tinggi);
-          animateCounter(elSedang, sedang);
+          elTotal.textContent = '0'; elTinggi.textContent = '0'; elSedang.textContent = '0';
+          animateCounter(elTotal, total); animateCounter(elTinggi, tinggi); animateCounter(elSedang, sedang);
         }
-      } else {
-        setStatsPlaceholder();
-      }
-    } catch (error) {
-      setStatsPlaceholder();
-    }
+      } else { setStatsPlaceholder(); }
+    } catch (error) { setStatsPlaceholder(); }
   }
-
   function setStatsPlaceholder() {
-    const ids = ['ctr-total', 'ctr-tinggi', 'ctr-sedang'];
-    ids.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = '—';
-    });
+    ['ctr-total','ctr-tinggi','ctr-sedang'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '—'; });
   }
 
-  // lazy load stats saat stats bar terlihat (performansi + mobile)
-  const statsObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        loadLiveStats();
-        statsObserver.disconnect();
-      }
-    });
-  }, { threshold: 0.2 });
+  const statsObserver = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) { loadLiveStats(); statsObserver.disconnect(); } }); }, { threshold: 0.2 });
   const statsBar = document.querySelector('.stats-bar');
   if (statsBar) statsObserver.observe(statsBar);
 
-  // animasi scroll reveal untuk kartu fitur & step (mobile smooth)
+  // scroll reveal
   const revealItems = document.querySelectorAll('.feat-card, .step');
   const scrollObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -832,25 +773,8 @@
         scrollObserver.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.08, rootMargin: '0px 0px -10px 0px' });
-  revealItems.forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(14px)';
-    el.style.transition = 'opacity 0.45s cubic-bezier(0.2, 0.9, 0.4, 1.1), transform 0.45s ease';
-    scrollObserver.observe(el);
-  });
-
-  // tiny fix: pastikan stat container tetap rapi saat loading
-  window.addEventListener('load', () => {
-    if (!document.getElementById('ctr-total')?.textContent?.includes('—') && 
-        document.getElementById('ctr-total')?.textContent === '0') {
-      // jika observer tidak trigger karena terlalu cepat? panggil ulang ringan
-      setTimeout(() => {
-        const totalEl = document.getElementById('ctr-total');
-        if (totalEl && totalEl.textContent === '0') loadLiveStats();
-      }, 600);
-    }
-  });
+  }, { threshold: 0.08 });
+  revealItems.forEach(el => { el.style.opacity = '0'; el.style.transform = 'translateY(14px)'; el.style.transition = 'opacity 0.45s cubic-bezier(0.2, 0.9, 0.4, 1.1), transform 0.45s ease'; scrollObserver.observe(el); });
 </script>
 </body>
 </html>
