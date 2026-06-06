@@ -52,37 +52,44 @@
     <div id="map"></div>
   </main>
 
-  <!-- FLOATING WIDGETS -->
-<aside class="widgets-container">
-  <!-- STATS WIDGET -->
-  <div id="stats-widget" class="widget glass">
-    <div class="widget-title">Live Stats</div>
-    <div class="stat-grid">
-      <div class="stat-item" onclick="focusCategory('all')">
-        <div class="stat-value accent" id="s-total">0</div>
-        <div class="stat-label">Total</div>
-      </div>
-      <div class="stat-item" onclick="focusCategory('tinggi')">
-        <div class="stat-value red" id="s-tinggi">0</div>
-        <div class="stat-label">Tinggi</div>
-      </div>
-      <div class="stat-item" onclick="focusCategory('sedang')">
-        <div class="stat-value orange" id="s-sedang">0</div>
-        <div class="stat-label">Sedang</div>
-      </div>
-      <div class="stat-item" onclick="focusCategory('cepu')">
-        <div class="stat-value green" id="s-cepu">0</div>
-        <div class="stat-label">Cepu</div>
-      </div>
-    </div>
+  <!-- LIVE LOCATION INDICATOR -->
+  <div id="live-location-indicator" class="glass">
+    <div class="live-dot"></div>
+    <span id="live-status-text">Mendeteksi lokasi...</span>
+    <span id="live-distance-text"></span>
   </div>
 
-  <!-- LEGEND WIDGET -->
-  <div id="legend-widget" class="widget glass">
-    <div class="legend-title">Kategori</div>
-    <div id="legend-items"></div>
-  </div>
-</aside>
+  <!-- FLOATING WIDGETS -->
+  <aside class="widgets-container">
+    <!-- STATS WIDGET -->
+    <div id="stats-widget" class="widget glass">
+      <div class="widget-title">Live Stats</div>
+      <div class="stat-grid">
+        <div class="stat-item" onclick="focusCategory('all')">
+          <div class="stat-value accent" id="s-total">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-item" onclick="focusCategory('tinggi')">
+          <div class="stat-value red" id="s-tinggi">0</div>
+          <div class="stat-label">Tinggi</div>
+        </div>
+        <div class="stat-item" onclick="focusCategory('sedang')">
+          <div class="stat-value orange" id="s-sedang">0</div>
+          <div class="stat-label">Sedang</div>
+        </div>
+        <div class="stat-item" onclick="focusCategory('cepu')">
+          <div class="stat-value green" id="s-cepu">0</div>
+          <div class="stat-label">Cepu</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEGEND WIDGET -->
+    <div id="legend-widget" class="widget glass">
+      <div class="legend-title">Kategori</div>
+      <div id="legend-items"></div>
+    </div>
+  </aside>
 
   <!-- FILTER WIDGET -->
   <aside id="filter-widget" class="widget glass">
@@ -122,6 +129,19 @@
       <button class="panel-close" onclick="closePanel('lapor')"><i class="fas fa-xmark"></i></button>
     </div>
     <div class="animate-in">
+      
+      <!-- STATUS LOKASI REAL-TIME -->
+      <div id="location-status" style="display:none;"></div>
+      
+      <!-- PERINGATAN JIKA DI LUAR LINGKARAN -->
+      <div id="outside-warning" style="display:none;" class="warning-banner">
+        <i class="fas fa-circle-exclamation"></i>
+        <div>
+          <strong>⚠️ Anda berada di luar wilayah layanan!</strong><br>
+          <small>Laporan hanya dapat dikirim dari dalam wilayah Kecamatan Cepu atau Padangan.</small>
+        </div>
+      </div>
+      
       <div class="form-group">
         <label class="form-label">Jenis Kejadian</label>
         <select class="form-select" id="f-kategori">
@@ -134,6 +154,7 @@
           <option value="lainnya">Lainnya</option>
         </select>
       </div>
+      
       <div class="form-group">
         <label class="form-label">Kecamatan</label>
         <select class="form-select" id="f-kecamatan">
@@ -142,33 +163,47 @@
           <option value="padangan">Padangan</option>
         </select>
       </div>
+      
       <div class="form-group">
         <label class="form-label">Lokasi / Alamat</label>
         <input type="text" class="form-input" id="f-lokasi" placeholder="Jl. Pemuda No.10, Cepu">
       </div>
+      
       <div class="form-group">
         <label class="form-label">Tanggal Kejadian</label>
         <input type="date" class="form-input" id="f-tanggal">
       </div>
+      
       <div class="form-group">
-        <label class="form-label">Koordinat (Opsional)</label>
+        <label class="form-label">Koordinat (Real-time)</label>
         <div class="coord-inputs">
-          <input type="text" class="form-input" id="f-lat" placeholder="Lat" readonly>
-          <input type="text" class="form-input" id="f-lng" placeholder="Lng" readonly>
-          <button class="pick-map-btn" onclick="startPickMode()"><i class="fas fa-map-pin"></i></button>
+          <input type="text" class="form-input" id="f-lat" placeholder="Latitude" readonly>
+          <input type="text" class="form-input" id="f-lng" placeholder="Longitude" readonly>
+          <button class="pick-map-btn" type="button" onclick="refreshLocation()" title="Refresh Lokasi">
+            <i class="fas fa-location-dot"></i>
+          </button>
+        </div>
+        <div style="font-size:10px; color:var(--tx3); margin-top:6px;">
+          <i class="fas fa-satellite-dish"></i> Lokasi Anda terdeteksi otomatis dan diperbarui setiap 3 detik.
         </div>
       </div>
+      
       <div class="form-group">
         <label class="form-label">Deskripsi</label>
         <textarea class="form-textarea" id="f-deskripsi" placeholder="Ceritakan kejadian..." maxlength="500"></textarea>
       </div>
+      
       <div class="form-group">
         <label class="form-label">Nama Pelapor</label>
         <input type="text" class="form-input" id="f-pelapor" placeholder="Anonim">
       </div>
-      <button class="btn-glow" onclick="submitLaporan()">
+      
+      <button class="btn-glow" id="submit-btn" onclick="submitLaporan()">
         <i class="fas fa-paper-plane"></i> KIRIM LAPORAN
       </button>
+      <div id="submit-disabled-msg" style="display:none; text-align:center; margin-top:12px; font-size:11px; color:var(--red);">
+        <i class="fas fa-lock"></i> Laporan tidak dapat dikirim karena Anda berada di luar wilayah layanan
+      </div>
     </div>
   </div>
 
@@ -206,6 +241,10 @@
         Sistem informasi geografis untuk pemetaan daerah rawan kriminalitas 
         di Kecamatan Cepu & Padangan, Kabupaten Blora.
       </p>
+      <div class="info-note">
+        <i class="fas fa-info-circle"></i> Sistem melacak lokasi Anda secara real-time. 
+        Laporan hanya dapat dikirim jika Anda berada di dalam wilayah Cepu atau Padangan.
+      </div>
       <div class="contact-grid">
         <div class="contact-card">
           <div class="contact-icon"><i class="fas fa-phone"></i></div>
@@ -237,12 +276,6 @@
         <div>Belum ada notifikasi</div>
       </div>
     </div>
-  </div>
-
-  <!-- PICK MODE TOAST -->
-  <div id="pick-toast" class="glass">
-    <i class="fas fa-hand-pointer"></i>
-    Klik pada peta untuk memilih lokasi
   </div>
 
   <!-- TOAST CONTAINER -->
