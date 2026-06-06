@@ -2,11 +2,12 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>E-KRIMMAP — Peta Kriminalitas Digital</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+<title>E-KRIMMAP — Peta Kriminalitas Digital | Mobile First</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
+  /* reset & variabel */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -20,6 +21,7 @@
     --text: #e2edf5;
     --muted: #5a7a96;
     --glow: 0 0 30px rgba(0,220,255,0.25);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   html { scroll-behavior: smooth; }
@@ -29,21 +31,22 @@
     background: var(--bg);
     color: var(--text);
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
   }
 
+  /* grid pattern (subtle) */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background-image:
-      linear-gradient(rgba(0,220,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,220,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
+    background-image: linear-gradient(rgba(0,220,255,0.02) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,220,255,0.02) 1px, transparent 1px);
+    background-size: 36px 36px;
     pointer-events: none;
     z-index: 0;
   }
 
-  /* ─── NAV ─── */
+  /* ─── NAVBAR (mobile-optimized, sentuh) ─── */
   nav {
     position: fixed;
     top: 0; left: 0; right: 0;
@@ -51,33 +54,36 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 20px;
-    background: rgba(5,10,15,0.92);
-    backdrop-filter: blur(20px);
+    padding: 12px 18px;
+    background: rgba(5,10,15,0.94);
+    backdrop-filter: blur(18px);
     border-bottom: 1px solid var(--border);
+    transition: padding 0.2s;
   }
 
   .nav-logo {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 800;
     letter-spacing: -0.02em;
+    line-height: 1;
   }
   .nav-logo span { color: var(--accent); }
 
   .nav-links {
     display: flex;
-    gap: 24px;
+    gap: 1.5rem;
     list-style: none;
   }
   .nav-links a {
     font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: var(--muted);
     text-decoration: none;
     letter-spacing: 0.06em;
+    font-weight: 500;
     transition: color 0.2s;
   }
-  .nav-links a:hover { color: var(--accent); }
+  .nav-links a:hover, .nav-links a:active { color: var(--accent); }
 
   .nav-cta {
     font-family: 'Space Mono', monospace;
@@ -87,17 +93,17 @@
     color: var(--bg);
     background: var(--accent);
     border: none;
-    padding: 9px 18px;
+    padding: 8px 16px;
     cursor: pointer;
     text-decoration: none;
     white-space: nowrap;
     clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, transform 0.05s;
     display: inline-block;
   }
-  .nav-cta:hover { opacity: 0.85; }
+  .nav-cta:active { opacity: 0.75; transform: scale(0.97); }
 
-  /* hamburger — mobile only */
+  /* hamburger (mobile dedicated) */
   .nav-hamburger {
     display: none;
     flex-direction: column;
@@ -105,45 +111,57 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
+    padding: 8px 4px;
+    z-index: 102;
   }
   .nav-hamburger span {
     display: block;
-    width: 22px; height: 2px;
+    width: 24px;
+    height: 2px;
     background: var(--accent);
-    transition: all 0.3s;
+    border-radius: 4px;
+    transition: all 0.25s ease;
   }
 
-  /* mobile drawer */
+  /* drawer menu mobile-first */
   .nav-drawer {
     display: none;
     position: fixed;
-    top: 53px; left: 0; right: 0;
-    background: rgba(5,10,15,0.97);
+    top: 56px;
+    left: 0;
+    right: 0;
+    background: rgba(5,10,15,0.98);
+    backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
-    padding: 20px;
+    padding: 18px 20px 22px;
     z-index: 99;
     flex-direction: column;
-    gap: 0;
+    gap: 4px;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.5);
   }
-  .nav-drawer.open { display: flex; }
+  .nav-drawer.open {
+    display: flex;
+  }
   .nav-drawer a {
     font-family: 'Space Mono', monospace;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 500;
     color: var(--muted);
     text-decoration: none;
-    letter-spacing: 0.1em;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.08em;
+    padding: 14px 8px;
+    border-bottom: 1px solid rgba(0,220,255,0.1);
     display: flex;
     align-items: center;
     gap: 12px;
-    transition: color 0.2s;
+    transition: color 0.2s, background 0.1s;
+    border-radius: 8px;
   }
+  .nav-drawer a:active { background: rgba(0,220,255,0.08); color: var(--accent); }
   .nav-drawer a:last-child { border-bottom: none; }
-  .nav-drawer a:hover, .nav-drawer a.accent { color: var(--accent); }
+  .nav-drawer a.accent { color: var(--accent); }
 
-  /* ─── HERO ─── */
+  /* ─── HERO (mobile touch) ─── */
   .hero {
     position: relative;
     z-index: 1;
@@ -153,7 +171,7 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 100px 20px 60px;
+    padding: 100px 20px 70px;
     overflow: hidden;
   }
 
@@ -162,49 +180,51 @@
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    width: min(700px, 100vw);
-    height: min(700px, 100vw);
+    width: min(600px, 90vw);
+    height: min(600px, 90vw);
     background: radial-gradient(circle, rgba(0,220,255,0.08) 0%, transparent 70%);
     pointer-events: none;
   }
 
   .hero-badge {
     font-family: 'Space Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.18em;
+    font-size: 0.55rem;
+    letter-spacing: 0.16em;
     color: var(--accent);
     border: 1px solid var(--accent);
     padding: 5px 14px;
     margin-bottom: 24px;
     display: inline-block;
-    animation: fadeUp 0.6s ease both;
+    animation: fadeUp 0.5s ease both;
+    background: rgba(0,0,0,0.2);
+    backdrop-filter: blur(4px);
   }
 
   .hero-title {
-    font-size: clamp(2rem, 9vw, 7rem);
+    font-size: clamp(2rem, 11vw, 5rem);
     font-weight: 800;
-    line-height: 1;
+    line-height: 1.05;
     letter-spacing: -0.02em;
-    margin-bottom: 10px;
-    animation: fadeUp 0.7s 0.1s ease both;
-    word-break: keep-all;
-    overflow-wrap: normal;
+    margin-bottom: 12px;
+    animation: fadeUp 0.5s 0.08s ease both;
   }
   .hero-title .line2 {
     display: block;
     color: transparent;
-    -webkit-text-stroke: 1.5px rgba(0,220,255,0.5);
+    -webkit-text-stroke: 1.2px rgba(0,220,255,0.65);
+    text-stroke: 1px rgba(0,220,255,0.65);
   }
   .hero-title .accent-word { color: var(--accent); }
 
   .hero-sub {
     font-family: 'Space Mono', monospace;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: var(--muted);
-    max-width: 340px;
-    line-height: 1.9;
-    margin: 20px auto 32px;
-    animation: fadeUp 0.7s 0.2s ease both;
+    max-width: 320px;
+    line-height: 1.7;
+    margin: 18px auto 32px;
+    animation: fadeUp 0.5s 0.16s ease both;
+    padding: 0 6px;
   }
 
   .hero-actions {
@@ -212,16 +232,18 @@
     gap: 12px;
     flex-wrap: wrap;
     justify-content: center;
-    animation: fadeUp 0.7s 0.3s ease both;
+    animation: fadeUp 0.5s 0.24s ease both;
     width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
   }
 
   .btn-primary, .btn-secondary {
     font-family: 'Space Mono', monospace;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: 0.1em;
-    padding: 14px 28px;
+    letter-spacing: 0.08em;
+    padding: 12px 18px;
     cursor: pointer;
     text-decoration: none;
     display: inline-flex;
@@ -229,25 +251,26 @@
     justify-content: center;
     gap: 8px;
     clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-    transition: opacity 0.2s, box-shadow 0.3s;
+    transition: all 0.2s ease;
     flex: 1;
-    max-width: 180px;
-    min-width: 140px;
+    min-width: 130px;
+    text-align: center;
+    touch-action: manipulation;
   }
   .btn-primary {
     color: var(--bg);
     background: var(--accent);
     border: none;
   }
-  .btn-primary:hover { opacity: 0.88; box-shadow: 0 0 30px rgba(0,220,255,0.4); }
+  .btn-primary:active { opacity: 0.85; transform: scale(0.97); }
   .btn-secondary {
     color: var(--accent);
     background: transparent;
     border: 1px solid var(--accent);
   }
-  .btn-secondary:hover { background: rgba(0,220,255,0.1); }
+  .btn-secondary:active { background: rgba(0,220,255,0.12); transform: scale(0.97); }
 
-  /* ─── STATS BAR ─── */
+  /* ─── STATS BAR (mobile) ─── */
   .stats-bar {
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
@@ -259,7 +282,7 @@
   }
 
   .stat-item {
-    padding: 28px 16px;
+    padding: 24px 12px;
     text-align: center;
     border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
@@ -268,25 +291,32 @@
   .stat-item:nth-child(3), .stat-item:nth-child(4) { border-bottom: none; }
 
   .stat-num {
-    font-size: 2.2rem;
+    font-size: 2rem;
     font-weight: 800;
     color: var(--accent);
     line-height: 1;
     margin-bottom: 6px;
+    letter-spacing: -0.5px;
   }
   .stat-num.red { color: var(--accent2); }
   .stat-num.yellow { color: var(--accent3); }
   .stat-label {
     font-family: 'Space Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.1em;
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
     color: var(--muted);
     text-transform: uppercase;
   }
+  .stat-loading {
+    font-size: 1rem;
+    opacity: 0.5;
+    display: inline-block;
+    width: 42px;
+  }
 
-  /* ─── FEATURES ─── */
+  /* ─── FEATURES (mobile 1kolom rapi) ─── */
   .features {
-    padding: 64px 20px;
+    padding: 56px 18px;
     max-width: 1100px;
     margin: 0 auto;
     position: relative;
@@ -296,9 +326,9 @@
   .section-tag {
     font-family: 'Space Mono', monospace;
     font-size: 0.6rem;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.2em;
     color: var(--accent);
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -306,59 +336,55 @@
   .section-tag::before {
     content: '';
     display: inline-block;
-    width: 24px; height: 1px;
+    width: 28px;
+    height: 2px;
     background: var(--accent);
   }
 
   .section-title {
-    font-size: clamp(1.7rem, 6vw, 3rem);
+    font-size: clamp(1.6rem, 6vw, 2.8rem);
     font-weight: 800;
     letter-spacing: -0.02em;
-    line-height: 1.08;
-    margin-bottom: 48px;
+    line-height: 1.1;
+    margin-bottom: 40px;
   }
   .section-title span { color: var(--accent); }
 
   .features-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2px;
+    grid-template-columns: 1fr;
+    gap: 14px;
   }
 
   .feat-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    padding: 24px 20px;
+    padding: 22px 18px;
     position: relative;
     overflow: hidden;
-    transition: border-color 0.3s, background 0.3s;
+    transition: all 0.2s;
+    border-radius: 8px;
   }
-  .feat-card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 3px; height: 0;
-    background: var(--accent);
-    transition: height 0.4s ease;
+  .feat-card:active {
+    background: var(--surface2);
+    transform: scale(0.99);
   }
-  .feat-card:hover { background: var(--surface2); border-color: rgba(0,220,255,0.3); }
-  .feat-card:hover::after { height: 100%; }
-
   .feat-icon {
-    width: 40px; height: 40px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 16px;
-    font-size: 1rem;
+    margin-bottom: 18px;
+    font-size: 1.2rem;
     color: var(--accent);
-    background: rgba(0,220,255,0.06);
+    background: rgba(0,220,255,0.08);
     border: 1px solid var(--border);
-    clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+    border-radius: 12px;
   }
 
   .feat-title {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 700;
     margin-bottom: 8px;
   }
@@ -366,12 +392,12 @@
     font-family: 'Space Mono', monospace;
     font-size: 0.62rem;
     color: var(--muted);
-    line-height: 1.8;
+    line-height: 1.7;
   }
 
-  /* ─── HOW IT WORKS ─── */
+  /* ─── HOW IT WORKS (mobile flex column) ─── */
   .how {
-    padding: 64px 20px;
+    padding: 56px 18px;
     background: var(--surface);
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
@@ -383,37 +409,35 @@
   .steps {
     display: flex;
     flex-direction: column;
-    gap: 0;
-    margin-top: 40px;
+    gap: 20px;
+    margin-top: 32px;
   }
 
   .step {
     display: flex;
-    gap: 20px;
+    gap: 16px;
     align-items: flex-start;
-    padding: 20px 0;
-    border-bottom: 1px solid var(--border);
-    position: relative;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,220,255,0.1);
   }
   .step:last-child { border-bottom: none; }
 
   .step-num {
-    width: 48px; height: 48px;
+    width: 48px;
+    height: 48px;
     min-width: 48px;
     border: 1px solid var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Space Mono', monospace;
-    font-size: 1rem;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--accent);
     background: var(--bg);
-    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    border-radius: 14px;
     flex-shrink: 0;
   }
 
-  .step-body {}
   .step-title {
     font-size: 0.95rem;
     font-weight: 700;
@@ -423,61 +447,49 @@
     font-family: 'Space Mono', monospace;
     font-size: 0.62rem;
     color: var(--muted);
-    line-height: 1.8;
+    line-height: 1.6;
   }
 
   /* ─── CTA ─── */
   .cta-section {
-    padding: 80px 20px;
+    padding: 70px 20px;
     text-align: center;
     position: relative;
     z-index: 1;
-    overflow: hidden;
-  }
-  .cta-section::before {
-    content: '';
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 400px; height: 300px;
-    background: radial-gradient(ellipse, rgba(0,220,255,0.06) 0%, transparent 70%);
   }
   .cta-title {
-    font-size: clamp(1.8rem, 7vw, 3.5rem);
+    font-size: clamp(1.7rem, 7vw, 3rem);
     font-weight: 800;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
     margin-bottom: 14px;
-    line-height: 1.05;
   }
   .cta-sub {
     font-family: 'Space Mono', monospace;
     font-size: 0.7rem;
     color: var(--muted);
-    margin-bottom: 36px;
-    line-height: 1.9;
+    margin-bottom: 32px;
+    line-height: 1.7;
   }
   .cta-section .section-tag { justify-content: center; }
 
-  /* ─── FOOTER ─── */
+  /* FOOTER mobile stack */
   footer {
     border-top: 1px solid var(--border);
-    padding: 28px 20px;
+    padding: 28px 20px calc(20px + var(--safe-bottom));
     background: var(--surface);
-    position: relative;
-    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     text-align: center;
   }
-  .footer-logo { font-size: 1rem; font-weight: 800; }
+  .footer-logo { font-size: 1rem; font-weight: 800; letter-spacing: -0.3px; }
   .footer-logo span { color: var(--accent); }
   .footer-copy {
     font-family: 'Space Mono', monospace;
-    font-size: 0.58rem;
+    font-size: 0.55rem;
     color: var(--muted);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
   }
   .footer-links {
     display: flex;
@@ -491,80 +503,74 @@
     font-size: 0.6rem;
     color: var(--muted);
     text-decoration: none;
-    transition: color 0.2s;
+    padding: 5px 0;
   }
-  .footer-links a:hover { color: var(--accent); }
+  .footer-links a:active { color: var(--accent); }
 
-  .stat-loading {
-    font-size: 1.2rem;
-    opacity: 0.3;
-    animation: blink 1.2s infinite;
-  }
-  @keyframes blink { 0%,100%{opacity:0.3} 50%{opacity:0.8} }
+  /* animasi */
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(18px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* ─── DESKTOP overrides ─── */
+  /* DESKTOP RESPONSIVE */
   @media (min-width: 640px) {
-    nav { padding: 16px 40px; }
+    nav { padding: 16px 36px; }
     .nav-hamburger { display: none !important; }
     .nav-links { display: flex !important; }
-
-    .hero { padding: 120px 32px 80px; }
-    .hero-sub { font-size: 0.82rem; max-width: 480px; }
-
-    .stats-bar {
-      grid-template-columns: repeat(4, 1fr);
-    }
+    .nav-cta { display: inline-block; }
+    .hero { padding: 130px 32px 80px; }
+    .hero-sub { max-width: 500px; font-size: 0.8rem; }
+    .stats-bar { grid-template-columns: repeat(4, 1fr); }
     .stat-item { border-bottom: none; }
     .stat-item:nth-child(2n) { border-right: 1px solid var(--border); }
     .stat-item:last-child { border-right: none; }
-
-    .features { padding: 80px 40px; }
-    .features-grid { grid-template-columns: repeat(3, 1fr); }
-
-    .how { padding: 80px 40px; }
+    .features { padding: 80px 36px; }
+    .features-grid { grid-template-columns: repeat(3, 1fr); gap: 2px; }
+    .feat-card { border-radius: 0; }
+    .how { padding: 80px 36px; }
     .steps {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 32px;
+      flex-direction: row;
+      gap: 28px;
     }
     .step {
       flex-direction: column;
       border-bottom: none;
       padding: 0;
+      flex: 1;
     }
-    .step-num { margin-bottom: 16px; }
-
+    .step-num { margin-bottom: 18px; }
     footer {
       flex-direction: row;
       justify-content: space-between;
-      padding: 28px 40px;
+      padding: 28px 36px;
       text-align: left;
     }
   }
 
-  /* ─── MOBILE only ─── */
+  /* touch target untuk link kecil di desktop tetap ramah */
   @media (max-width: 639px) {
-    .nav-links { display: none; }
-    .nav-cta { display: none; }
+    .nav-links, .nav-cta { display: none; }
     .nav-hamburger { display: flex; }
-
+    .hero-actions { gap: 12px; }
     .btn-primary, .btn-secondary {
-      max-width: none;
-      flex: 1 1 calc(50% - 6px);
-      min-width: 120px;
-      padding: 13px 16px;
-      font-size: 0.65rem;
+      min-width: 130px;
+      padding: 12px 14px;
+      font-size: 0.68rem;
     }
+    .feat-card { border-radius: 12px; }
+    .step-num { width: 44px; height: 44px; min-width: 44px; }
   }
+
+  /* effect smooth */
+  a, button { -webkit-tap-highlight-color: transparent; }
+  .stat-loading { animation: pulse 1.1s infinite; }
+  @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
+<!-- NAVIGATION (mobile hamburger + drawer) -->
 <nav>
   <div class="nav-logo">E-KRIMM<span>AP</span></div>
   <ul class="nav-links">
@@ -573,20 +579,20 @@
     <li><a href="public/index.html">PETA</a></li>
   </ul>
   <a href="public/index.html" class="nav-cta">BUKA PETA →</a>
-  <button class="nav-hamburger" id="hamburger" onclick="toggleDrawer()" aria-label="Menu">
+  <button class="nav-hamburger" id="hamburger" aria-label="Menu" onclick="toggleDrawer()">
     <span></span><span></span><span></span>
   </button>
 </nav>
 
-<!-- MOBILE DRAWER -->
+<!-- MOBILE DRAWER (touch friendly) -->
 <div class="nav-drawer" id="navDrawer">
-  <a href="#fitur" onclick="closeDrawer()"><i class="fas fa-star fa-fw"></i> Fitur</a>
+  <a href="#fitur" onclick="closeDrawer()"><i class="fas fa-star fa-fw"></i> Fitur Unggulan</a>
   <a href="#cara-kerja" onclick="closeDrawer()"><i class="fas fa-circle-info fa-fw"></i> Cara Kerja</a>
   <a href="public/index.html"><i class="fas fa-map fa-fw"></i> Peta Publik</a>
   <a href="admin/admin.html" class="accent"><i class="fas fa-lock fa-fw"></i> Admin Panel</a>
 </div>
 
-<!-- HERO -->
+<!-- HERO SECTION -->
 <section class="hero">
   <div class="hero-badge">⬡ SISTEM INFORMASI GEOGRAFIS · BLORA</div>
   <h1 class="hero-title">
@@ -605,11 +611,9 @@
       <i class="fas fa-play"></i> CARA KERJA
     </a>
   </div>
-
-
 </section>
 
-<!-- STATS BAR -->
+<!-- STATS BAR (real-time dari sheet) -->
 <section class="stats-bar">
   <div class="stat-item">
     <div class="stat-num" id="ctr-total"><span class="stat-loading">···</span></div>
@@ -705,7 +709,7 @@
   </div>
 </section>
 
-<!-- CTA -->
+<!-- CALL TO ACTION -->
 <section class="cta-section">
   <div class="section-tag">MULAI SEKARANG</div>
   <h2 class="cta-title">Pantau Keamanan<br>Wilayahmu</h2>
@@ -728,26 +732,40 @@
 </footer>
 
 <script>
-  // Mobile drawer
+  // MOBILE DRAWER FUNCTIONS
   function toggleDrawer() {
-    document.getElementById('navDrawer').classList.toggle('open');
+    const drawer = document.getElementById('navDrawer');
+    drawer.classList.toggle('open');
+    const spans = document.querySelectorAll('.nav-hamburger span');
+    if (drawer.classList.contains('open')) {
+      // visual feedback (opsional)
+    }
   }
   function closeDrawer() {
     document.getElementById('navDrawer').classList.remove('open');
   }
-  document.addEventListener('click', e => {
-    if (!e.target.closest('nav') && !e.target.closest('#navDrawer')) closeDrawer();
+  // tutup drawer saat klik di luar nav area
+  document.addEventListener('click', (e) => {
+    const nav = document.querySelector('nav');
+    const drawer = document.getElementById('navDrawer');
+    if (!nav?.contains(e.target) && !drawer?.contains(e.target) && drawer.classList.contains('open')) {
+      closeDrawer();
+    }
   });
 
-  // ── LIVE STATS dari Google Sheets ──
+  // ── AMBIL LIVE STATS DARI GOOGLE SHEETS (dengan fallback smooth)
   const SHEET_API = 'https://script.google.com/macros/s/AKfycby8dIleiZo_zj0ufeKY_Ulp9632Me5xFdeX2mPV6G2qdM_Tf3P9WvrtLck02D4otYYJ/exec';
 
   function animateCounter(el, target, duration = 1200) {
     let start = 0;
-    const step = target / (duration / 16);
+    const stepVal = target / (duration / 16);
     const timer = setInterval(() => {
-      start += step;
-      if (start >= target) { el.textContent = target; clearInterval(timer); return; }
+      start += stepVal;
+      if (start >= target) {
+        el.textContent = target;
+        clearInterval(timer);
+        return;
+      }
       el.textContent = Math.floor(start);
     }, 16);
   }
@@ -760,57 +778,79 @@
 
       if (result.success && Array.isArray(result.data)) {
         const data = result.data;
-        const total  = data.length;
+        const total = data.length;
         const tinggi = data.filter(d => d.severity === 'tinggi').length;
         const sedang = data.filter(d => d.severity === 'sedang').length;
 
-        const elTotal  = document.getElementById('ctr-total');
+        const elTotal = document.getElementById('ctr-total');
         const elTinggi = document.getElementById('ctr-tinggi');
         const elSedang = document.getElementById('ctr-sedang');
 
-        elTotal.textContent  = '0';
-        elTinggi.textContent = '0';
-        elSedang.textContent = '0';
-
-        animateCounter(elTotal,  total);
-        animateCounter(elTinggi, tinggi);
-        animateCounter(elSedang, sedang);
+        if (elTotal && elTinggi && elSedang) {
+          elTotal.textContent = '0';
+          elTinggi.textContent = '0';
+          elSedang.textContent = '0';
+          animateCounter(elTotal, total);
+          animateCounter(elTinggi, tinggi);
+          animateCounter(elSedang, sedang);
+        }
       } else {
-        setStatsError();
+        setStatsPlaceholder();
       }
-    } catch (e) {
-      setStatsError();
+    } catch (error) {
+      setStatsPlaceholder();
     }
   }
 
-  function setStatsError() {
-    ['ctr-total','ctr-tinggi','ctr-sedang'].forEach(id => {
+  function setStatsPlaceholder() {
+    const ids = ['ctr-total', 'ctr-tinggi', 'ctr-sedang'];
+    ids.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = '—';
     });
   }
 
-  // Jalankan saat stats bar masuk viewport
-  const statsObserver = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
+  // lazy load stats saat stats bar terlihat (performansi + mobile)
+  const statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
         loadLiveStats();
         statsObserver.disconnect();
       }
     });
   }, { threshold: 0.2 });
-  statsObserver.observe(document.querySelector('.stats-bar'));
+  const statsBar = document.querySelector('.stats-bar');
+  if (statsBar) statsObserver.observe(statsBar);
 
-  // Scroll reveal
-  const revealObserver = new IntersectionObserver(entries => {
-    entries.forEach((e, i) => {
-      if (e.isIntersecting) {
-        e.target.style.animation = `fadeUp 0.5s ${i * 0.07}s ease both`;
-        revealObserver.unobserve(e.target);
+  // animasi scroll reveal untuk kartu fitur & step (mobile smooth)
+  const revealItems = document.querySelectorAll('.feat-card, .step');
+  const scrollObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+        scrollObserver.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.1 });
-  document.querySelectorAll('.feat-card, .step').forEach(el => revealObserver.observe(el));
+  }, { threshold: 0.08, rootMargin: '0px 0px -10px 0px' });
+  revealItems.forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(14px)';
+    el.style.transition = 'opacity 0.45s cubic-bezier(0.2, 0.9, 0.4, 1.1), transform 0.45s ease';
+    scrollObserver.observe(el);
+  });
+
+  // tiny fix: pastikan stat container tetap rapi saat loading
+  window.addEventListener('load', () => {
+    if (!document.getElementById('ctr-total')?.textContent?.includes('—') && 
+        document.getElementById('ctr-total')?.textContent === '0') {
+      // jika observer tidak trigger karena terlalu cepat? panggil ulang ringan
+      setTimeout(() => {
+        const totalEl = document.getElementById('ctr-total');
+        if (totalEl && totalEl.textContent === '0') loadLiveStats();
+      }, 600);
+    }
+  });
 </script>
 </body>
 </html>
