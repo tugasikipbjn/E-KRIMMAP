@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>E-KRIMMAP | Sistem Pemetaan Kriminalitas Cepu & Padangan</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Leaflet CSS/JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  /* ========== DESIGN SYSTEM ========== */
+  :root {
+    --bg: #f0f4f8;
+    --card-bg: #ffffff;
+    --glass: rgba(255, 255, 255, 0.92);
+    --accent: #1e4a76;
+    --accent-light: #2c628f;
+    --accent-glow: rgba(30, 74, 118, 0.12);
+    --primary: #0f3b5c;
+    --secondary: #3b82f6;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --tx1: #0f172a;
+    --tx2: #334155;
+    --tx3: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    --radius: 24px;
+    --radius-md: 16px;
+    --head: 'Inter', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--bg);
+    font-family: var(--head);
+    color: var(--tx1);
+    line-height: 1.5;
+  }
+
+  /* hidden admin trigger (Easter Egg) */
+  .secret-admin-area {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    background: transparent;
+    z-index: 9999;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: 0.2s;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .secret-admin-area:hover {
+    opacity: 1;
+    background: rgba(0,0,0,0.05);
+  }
+  .secret-admin-area i {
+    font-size: 20px;
+    color: var(--tx3);
+  }
+
+  /* Admin Modal (tersembunyi sampai klik rahasia) */
+  .admin-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(12px);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .admin-modal.active {
+    display: flex;
+  }
+  .admin-card {
+    background: white;
+    max-width: 420px;
+    width: 90%;
+    border-radius: 32px;
+    padding: 32px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    animation: fadeUp 0.3s ease;
+  }
+  @keyframes fadeUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .admin-icon {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+  }
+  .admin-icon i { font-size: 32px; color: white; }
+  .admin-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+  .admin-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    font-family: var(--mono);
+    text-align: center;
+    letter-spacing: 2px;
+    margin: 20px 0;
+    font-size: 16px;
+  }
+  .admin-input:focus { outline: none; border-color: var(--accent); }
+  .admin-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    width: 100%;
+    padding: 14px;
+    border-radius: 28px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .admin-btn:hover { background: var(--accent-light); transform: translateY(-2px); }
+  .error-msg { color: var(--danger); font-size: 13px; margin-top: 12px; display: none; }
+
+  /* ========== LANDING PAGE STYLE ========== */
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+
+  /* header */
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 0;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 800;
+    color: white;
+    box-shadow: 0 6px 14px var(--accent-glow);
+  }
+  .logo-text {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .logo-text span { color: var(--secondary); }
+  .logo-sub { font-size: 10px; color: var(--tx3); font-family: var(--mono); margin-top: 4px; }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+  }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--tx2);
+    font-weight: 600;
+    transition: 0.2s;
+  }
+  .nav-links a:hover { color: var(--primary); }
+
+  /* hero */
+  .hero {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    align-items: center;
+    justify-content: space-between;
+    margin: 40px 0 60px;
+  }
+  .hero-left { flex: 1; min-width: 260px; }
+  .hero-badge {
+    display: inline-block;
+    background: var(--accent-glow);
+    padding: 6px 14px;
+    border-radius: 40px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 20px;
+  }
+  .hero-left h1 {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+  .hero-left h1 span { color: var(--secondary); }
+  .hero-desc {
+    font-size: 18px;
+    color: var(--tx2);
+    margin-bottom: 32px;
+    max-width: 500px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+  .stat-hero h3 { font-size: 32px; font-weight: 800; color: var(--primary); }
+  .stat-hero p { font-size: 13px; color: var(--tx3); font-weight: 500; }
+  .cta-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 40px;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px var(--accent-glow);
+  }
+  .cta-btn:hover { background: var(--accent-light); transform: translateY(-3px); }
+  .hero-right { flex: 1; min-width: 280px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); height: 380px; background: #eef2ff; }
+  #hero-map { height: 100%; width: 100%; z-index: 1; }
+
+  /* features */
+  .section-title {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 800;
+    margin: 60px 0 40px;
+  }
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 30px;
+    margin-bottom: 70px;
+  }
+  .feature-card {
+    background: var(--card-bg);
+    border-radius: 28px;
+    padding: 28px 22px;
+    text-align: center;
+    border: 1px solid var(--border);
+    transition: 0.3s;
+  }
+  .feature-card:hover { transform: translateY(-8px); box-shadow: var(--shadow); border-color: var(--secondary); }
+  .feature-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--accent-glow);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 28px;
+    color: var(--primary);
+  }
+  .feature-card h3 { font-size: 20px; margin-bottom: 12px; }
+  .feature-card p { color: var(--tx2); font-size: 14px; }
+
+  /* live preview */
+  .live-preview {
+    background: white;
+    border-radius: 32px;
+    padding: 32px;
+    margin: 40px 0;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .badge-risk {
+    background: var(--warning);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .incident-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .incident-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--bg);
+    border-radius: 20px;
+    border-left: 4px solid var(--secondary);
+  }
+  .incident-cat {
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .incident-loc {
+    font-size: 12px;
+    color: var(--tx3);
+  }
+  .footer {
+    background: var(--primary);
+    color: white;
+    padding: 40px 0 24px;
+    margin-top: 70px;
+    border-radius: 48px 48px 0 0;
+  }
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .copyright { text-align: center; margin-top: 40px; opacity: 0.7; font-size: 13px; }
+  @media (max-width: 768px) {
+    .hero-left h1 { font-size: 32px; }
+    .navbar { flex-direction: column; }
+    .nav-links { gap: 20px; }
+    .hero-right { height: 280px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Secret Admin Zone (Klik Rahasia) -->
+<div class="secret-admin-area" id="secretAdminBtn">
+  <i class="fas fa-user-shield"></i>
+</div>
+
+<!-- Admin Login Modal (tersembunyi) -->
+<div class="admin-modal" id="adminModal">
+  <div class="admin-card">
+    <div class="admin-icon"><i class="fas fa-lock"></i></div>
+    <div class="admin-title">Akses Administrator</div>
+    <div class="admin-sub" style="font-size:12px; color:#64748b;">Panel kontrol E-KRIMMAP</div>
+    <input type="password" id="adminPassInput" class="admin-input" placeholder="PASSWORD" autocomplete="off">
+    <button class="admin-btn" id="adminLoginBtn">MASUK KE PANEL</button>
+    <div class="error-msg" id="adminErrorMsg">❌ Password salah</div>
+    <div style="margin-top:16px; font-size:11px; color:#94a3b8;">* Khusus petugas</div>
+  </div>
+</div>
+
+<!-- LANDING PAGE CONTENT -->
+<main class="container">
+  <nav class="navbar">
+    <div class="logo">
+      <div class="logo-icon">⬡</div>
+      <div>
+        <div class="logo-text">E-KRIMM<span>AP</span></div>
+        <div class="logo-sub">Cepu · Padangan</div>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="#">Beranda</a>
+      <a href="#features">Fitur</a>
+      <a href="#data">Data Terkini</a>
+      <a href="#" id="openPublicLaporBtn" style="background:var(--accent-glow); padding:8px 18px; border-radius:40px;">Lapor Kejadian</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-badge"><i class="fas fa-map-marked-alt"></i> SIG Kriminalitas</div>
+      <h1>Pemetaan <span>Rawan Kriminalitas</span><br>Cepu & Padangan</h1>
+      <p class="hero-desc">Sistem informasi geografis berbasis partisipasi warga untuk meningkatkan keamanan dan ketertiban masyarakat di wilayah Kecamatan Cepu dan Padangan, Kabupaten Blora.</p>
+      <div class="hero-stats">
+        <div class="stat-hero"><h3 id="landingTotal">0</h3><p>Kejadian Tercatat</p></div>
+        <div class="stat-hero"><h3 id="landingHigh">0</h3><p>Risiko Tinggi</p></div>
+        <div class="stat-hero"><h3 id="landingKec">0</h3><p>Kecamatan Aktif</p></div>
+      </div>
+      <button class="cta-btn" id="heroLaporBtn"><i class="fas fa-exclamation-triangle"></i> Laporkan Sekarang</button>
+    </div>
+    <div class="hero-right">
+      <div id="hero-map"></div>
+    </div>
+  </div>
+
+  <!-- Fitur Unggulan -->
+  <div id="features">
+    <h2 class="section-title">Fitur Unggulan</h2>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon"><i class="fas fa-map-pin"></i></div><h3>Peta Interaktif</h3><p>Visualisasi titik rawan kriminalitas dengan tingkat risiko.</p></div>
+      <div class="feature-card"><div class="feature-icon"><i class="fas fa-chart-line"></i></div><h3>Statistik Real-time</h3><p>Data terkini kategori kejadian & analisis wilayah.</p></div>
+      <div class="feature-card"><div class="feature-icon"><i class="fas fa-paper-plane"></i></div><h3>Laporan Warga</h3><p>Kirim laporan kejadian langsung ke admin untuk diverifikasi.</p></div>
+      <div class="feature-card"><div class="feature-icon"><i class="fas fa-shield-alt"></i></div><h3>Mitra Kepolisian</h3><p>Data terintegrasi membantu respons cepat kepolisian.</p></div>
+    </div>
+  </div>
+
+  <!-- Data Terkini (Preview dari Google Sheets) -->
+  <div id="data">
+    <div class="live-preview">
+      <div class="preview-header">
+        <div><i class="fas fa-database" style="margin-right:8px; color:var(--primary);"></i> <strong>Data Kejadian Terverifikasi</strong></div>
+        <div class="badge-risk"><i class="fas fa-sync-alt"></i> Sinkronisasi otomatis</div>
+      </div>
+      <div class="incident-list" id="previewIncidentList">
+        <div style="text-align:center; padding:30px;"><i class="fas fa-spinner fa-pulse"></i> Memuat data terkini...</div>
+      </div>
+      <div style="margin-top:16px; text-align:right; font-size:12px; color:var(--tx3);">* Data real-time dari sistem E-KRIMMAP</div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><strong>E-KRIMMAP</strong><br><span style="font-size:12px;">Sistem Informasi Geografis Kriminalitas</span></div>
+    <div><i class="fas fa-phone-alt"></i> Call Center 110<br><span style="font-size:12px;">Polres Blora</span></div>
+    <div><i class="fas fa-envelope"></i> e-krimmap@blora.go.id</div>
+  </div>
+  <div class="copyright">© 2026 E-KRIMMAP | Dinas Komunikasi & Informatika Kab. Blora</div>
+</footer>
+
+<!-- Simple Toast untuk notifikasi landing -->
+<div id="landingToast" style="position:fixed; bottom:30px; left:20px; z-index:1000; background:var(--primary); color:white; padding:8px 18px; border-radius:30px; font-size:13px; opacity:0; transition:0.2s; pointer-events:none;"></div>
+
+<script>
+  // ==================== GLOBAL CONFIG ====================
+  const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycby8dIleiZo_zj0ufeKY_Ulp9632Me5xFdeX2mPV6G2qdM_Tf3P9WvrtLck02D4otYYJ/exec';
+
+  let verifiedIncidents = [];
+  let mapInstance = null;
+
+  // Helper toast landing
+  function showLandingToast(msg, type = 'info') {
+    const toast = document.getElementById('landingToast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    toast.style.background = type === 'error' ? '#dc2626' : '#1e4a76';
+    setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+  }
+
+  // Fetch data dari Google Sheets (hanya getVerified)
+  async function fetchVerifiedIncidents() {
+    try {
+      const url = new URL(GOOGLE_SHEET_API_URL);
+      url.searchParams.append('action', 'getVerified');
+      const resp = await fetch(url.toString());
+      if (!resp.ok) throw new Error('Gagal fetch');
+      const result = await resp.json();
+      if (result.success && Array.isArray(result.data)) {
+        verifiedIncidents = result.data;
+        console.log('✅ Data terverifikasi dimuat:', verifiedIncidents.length);
+        updateLandingUI();
+        renderPreviewList();
+        updateMapMarkers();
+        return verifiedIncidents;
+      } else {
+        verifiedIncidents = [];
+        updateLandingUI();
+        renderPreviewList();
+        return [];
+      }
+    } catch (err) {
+      console.warn(err);
+      verifiedIncidents = [];
+      updateLandingUI();
+      renderPreviewList();
+      return [];
+    }
+  }
+
+  function updateLandingUI() {
+    const totalSpan = document.getElementById('landingTotal');
+    const highSpan = document.getElementById('landingHigh');
+    const kecSpan = document.getElementById('landingKec');
+    if (totalSpan) totalSpan.innerText = verifiedIncidents.length;
+    const highRisk = verifiedIncidents.filter(i => i.severity === 'tinggi').length;
+    if (highSpan) highSpan.innerText = highRisk;
+    // kecamatan aktif: cepu & padangan
+    const kecSet = new Set(verifiedIncidents.map(i => i.kecamatan).filter(Boolean));
+    if (kecSpan) kecSpan.innerText = kecSet.size || '2';
+  }
+
+  function renderPreviewList() {
+    const container = document.getElementById('previewIncidentList');
+    if (!container) return;
+    if (!verifiedIncidents.length) {
+      container.innerHTML = `<div style="text-align:center; padding:32px; color:#64748b;"><i class="fas fa-inbox"></i> Belum ada data kejadian terverifikasi</div>`;
+      return;
+    }
+    const latest = [...verifiedIncidents].slice(0, 5);
+    container.innerHTML = latest.map(inc => {
+      const catLabel = { pencurian:'Pencurian', kekerasan:'Kekerasan', narkoba:'Narkoba', penipuan:'Penipuan', pembunuhan:'Pembunuhan', lainnya:'Lainnya' }[inc.kategori] || inc.kategori;
+      const riskIcon = inc.severity === 'tinggi' ? '🔴' : (inc.severity === 'sedang' ? '🟠' : '🟡');
+      return `
+        <div class="incident-item">
+          <div><span style="font-weight:800;">${riskIcon}</span> <span class="incident-cat">${catLabel}</span><br><span class="incident-loc"><i class="fas fa-location-dot"></i> ${inc.lokasi || '-'} · ${inc.kecamatan || ''}</span></div>
+          <div style="font-size:12px; background:var(--accent-glow); padding:4px 10px; border-radius:30px;">${inc.tanggal_kejadian || '-'}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ========== MAP INIT (Leaflet) ==========
+  function initHeroMap() {
+    if (mapInstance) return;
+    mapInstance = L.map('hero-map').setView([-7.115, 111.548], 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(mapInstance);
+    // optional circles area
+    L.circle([-7.130, 111.591], { radius: 3500, color: '#3b82f6', weight: 1, fillOpacity: 0.05 }).addTo(mapInstance);
+    L.circle([-7.102, 111.502], { radius: 3000, color: '#7e57c2', weight: 1, fillOpacity: 0.05 }).addTo(mapInstance);
+  }
+
+  function updateMapMarkers() {
+    if (!mapInstance) return;
+    // clear existing markers except controls
+    mapInstance.eachLayer((layer) => {
+      if (layer instanceof L.Marker) mapInstance.removeLayer(layer);
+      if (layer instanceof L.CircleMarker) mapInstance.removeLayer(layer);
+    });
+    if (!verifiedIncidents.length) return;
+    verifiedIncidents.forEach(inc => {
+      const lat = parseFloat(inc.latitude);
+      const lng = parseFloat(inc.longitude);
+      if (isNaN(lat) || isNaN(lng)) return;
+      const severity = inc.severity === 'tinggi' ? 3 : (inc.severity === 'sedang' ? 2 : 1);
+      const size = severity === 3 ? 28 : severity === 2 ? 20 : 14;
+      const colorMap = { pencurian:'#f59e0b', kekerasan:'#ef4444', narkoba:'#8b5cf6', penipuan:'#10b981', pembunuhan:'#dc2626', lainnya:'#64748b' };
+      const col = colorMap[inc.kategori] || '#3b82f6';
+      const customIcon = L.divIcon({
+        html: `<div style="width:${size}px;height:${size}px;background:${col};border-radius:50%;border:2px solid white;box-shadow:0 0 12px ${col};"></div>`,
+        className: '',
+        iconAnchor: [size/2, size/2]
+      });
+      const marker = L.marker([lat, lng], { icon: customIcon });
+      marker.bindPopup(`<b>${inc.kategori}</b><br>${inc.lokasi}<br><small>${inc.tanggal_kejadian}</small>`);
+      marker.addTo(mapInstance);
+    });
+  }
+
+  // LAPOR PANEL (sederhana via redirect ke form lapor atau muncul alert? biar seamless kita buat popup form mini)
+  // Karena landing page ingin integrasi lapor, kita buat modal lapor ringan
+  function openReportModal() {
+    const modalHtml = document.createElement('div');
+    modalHtml.id = 'quickReportModal';
+    modalHtml.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:20000; display:flex; align-items:center; justify-content:center;';
+    modalHtml.innerHTML = `
+      <div style="background:white; max-width:480px; width:90%; border-radius:32px; padding:28px; animation: fadeUp 0.2s ease;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:16px;"><h3 style="font-weight:800;">Lapor Kejadian</h3><button id="closeReportModalBtn" style="background:none; border:none; font-size:24px;">&times;</button></div>
+        <div class="form-group" style="margin-bottom:14px;"><label>Kategori</label><select id="qKategori" style="width:100%; padding:10px; border-radius:16px; border:1px solid #ccc;"><option value="pencurian">Pencurian</option><option value="kekerasan">Kekerasan</option><option value="narkoba">Narkoba</option><option value="penipuan">Penipuan</option><option value="pembunuhan">Pembunuhan</option><option value="lainnya">Lainnya</option></select></div>
+        <div class="form-group" style="margin-bottom:14px;"><label>Kecamatan</label><select id="qKecamatan" style="width:100%; padding:10px; border-radius:16px;"><option value="cepu">Cepu</option><option value="padangan">Padangan</option></select></div>
+        <div class="form-group" style="margin-bottom:14px;"><label>Lokasi (Alamat)</label><input id="qLokasi" placeholder="Jl. Contoh No.1" style="width:100%; padding:10px; border-radius:16px; border:1px solid #ccc;"></div>
+        <div class="form-group" style="margin-bottom:14px;"><label>Tanggal Kejadian</label><input type="date" id="qTanggal" style="width:100%; padding:10px; border-radius:16px;"></div>
+        <div class="form-group" style="margin-bottom:14px;"><label>Nama Pelapor (opsional)</label><input id="qNama" placeholder="Anonim" style="width:100%; padding:10px;"></div>
+        <button id="submitQuickReport" style="background:#1e4a76; color:white; border:none; width:100%; padding:14px; border-radius:40px; font-weight:700;">Kirim Laporan</button>
+        <div id="quickReportStatus" style="margin-top:12px; font-size:12px; text-align:center;"></div>
+      </div>
+    `;
+    document.body.appendChild(modalHtml);
+    const closeBtn = document.getElementById('closeReportModalBtn');
+    const submitBtn = document.getElementById('submitQuickReport');
+    const tanggalInput = document.getElementById('qTanggal');
+    if (tanggalInput) tanggalInput.value = new Date().toISOString().split('T')[0];
+    const removeModal = () => modalHtml.remove();
+    closeBtn?.addEventListener('click', removeModal);
+    submitBtn?.addEventListener('click', async () => {
+      const kategori = document.getElementById('qKategori')?.value;
+      const kecamatan = document.getElementById('qKecamatan')?.value;
+      const lokasi = document.getElementById('qLokasi')?.value;
+      const tanggal = document.getElementById('qTanggal')?.value;
+      const nama = document.getElementById('qNama')?.value?.trim() || 'Anonim';
+      if (!kategori || !kecamatan || !lokasi || !tanggal) {
+        document.getElementById('quickReportStatus').innerHTML = '<span style="color:#dc2626;">Harap lengkapi data</span>';
+        return;
+      }
+      // kirim ke Google Sheets
+      try {
+        const url = new URL(GOOGLE_SHEET_API_URL);
+        url.searchParams.append('action', 'create');
+        url.searchParams.append('nama', nama);
+        url.searchParams.append('kontak', '-');
+        url.searchParams.append('kategori', kategori);
+        url.searchParams.append('kecamatan', kecamatan);
+        url.searchParams.append('lokasi', lokasi);
+        url.searchParams.append('deskripsi', 'Laporan dari landing page');
+        url.searchParams.append('tanggal_kejadian', tanggal);
+        url.searchParams.append('latitude', '');
+        url.searchParams.append('longitude', '');
+        url.searchParams.append('severity', 'sedang');
+        url.searchParams.append('sumber', 'Website');
+        url.searchParams.append('status', 'pending');
+        await fetch(url.toString(), { method: 'GET', mode: 'no-cors' });
+        document.getElementById('quickReportStatus').innerHTML = '<span style="color:#10b981;">✅ Laporan terkirim! Menunggu verifikasi admin.</span>';
+        setTimeout(removeModal, 2000);
+        showLandingToast('Laporan berhasil dikirim!', 'success');
+        // refresh data riwayat di landing? nanti saja
+      } catch(e) {
+        document.getElementById('quickReportStatus').innerHTML = '<span style="color:#dc2626;">Gagal mengirim, coba lagi.</span>';
+      }
+    });
+  }
+
+  // ========== ADMIN RAHASIA ==========
+  const ADMIN_PASSWORD = 'admin123';
+  let adminLoggedIn = false;
+
+  const secretBtn = document.getElementById('secretAdminBtn');
+  const adminModalDiv = document.getElementById('adminModal');
+  const adminLoginBtn = document.getElementById('adminLoginBtn');
+  const adminPassInput = document.getElementById('adminPassInput');
+  const adminError = document.getElementById('adminErrorMsg');
+
+  secretBtn?.addEventListener('click', () => {
+    adminModalDiv.classList.add('active');
+  });
+  function closeAdminModal() { adminModalDiv.classList.remove('active'); }
+  function doAdminLogin() {
+    const val = adminPassInput.value;
+    if (val === ADMIN_PASSWORD) {
+      adminLoggedIn = true;
+      closeAdminModal();
+      // redirect ke admin panel (file admin.html di repo harus ada)
+      window.location.href = 'admin.html';
+      showLandingToast('Akses admin diterima, mengalihkan...', 'success');
+    } else {
+      adminError.style.display = 'block';
+      setTimeout(() => { adminError.style.display = 'none'; }, 2000);
+      adminPassInput.value = '';
+    }
+  }
+  adminLoginBtn?.addEventListener('click', doAdminLogin);
+  adminPassInput?.addEventListener('keypress', (e) => { if(e.key === 'Enter') doAdminLogin(); });
+  document.querySelector('.admin-modal')?.addEventListener('click', (e) => { if(e.target === adminModalDiv) closeAdminModal(); });
+
+  // Event Lapor dari Hero & navbar
+  const heroLapor = document.getElementById('heroLaporBtn');
+  const navLapor = document.getElementById('openPublicLaporBtn');
+  heroLapor?.addEventListener('click', openReportModal);
+  navLapor?.addEventListener('click', (e) => { e.preventDefault(); openReportModal(); });
+
+  // ========== INITIALIZE ==========
+  window.addEventListener('DOMContentLoaded', async () => {
+    initHeroMap();
+    await fetchVerifiedIncidents();
+    setInterval(async () => {
+      await fetchVerifiedIncidents();
+    }, 45000); // refresh tiap 45 detik
+  });
+</script>
+</body>
+</html>
