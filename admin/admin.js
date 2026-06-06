@@ -74,7 +74,6 @@ async function syncDataFromSheet() {
   console.log('🔄 Starting sync...');
   
   try {
-    // Get all verified data
     const result = await fetchFromSheet('getVerified');
     console.log('getVerified result:', result);
     
@@ -100,7 +99,6 @@ async function syncDataFromSheet() {
       dataStore = [];
     }
     
-    // Get pending reports
     const pendingResult = await fetchFromSheet('getPending');
     console.log('getPending result:', pendingResult);
     
@@ -271,7 +269,6 @@ function renderDashboard() {
   if (processedElement) processedElement.textContent = reports.filter(r => r.status === 'processed').length;
   if (completedElement) completedElement.textContent = data.filter(d => d.status === 'verified').length;
   
-  // Kecamatan Chart
   const kecamatanData = {
     cepu: data.filter(d => d.kecamatan === 'cepu').length,
     padangan: data.filter(d => d.kecamatan === 'padangan').length
@@ -286,7 +283,6 @@ function renderDashboard() {
     `;
   }
   
-  // Category Chart
   const categoryCounts = {};
   CATEGORIES.forEach(cat => { categoryCounts[cat] = data.filter(d => d.kategori === cat).length; });
   const totalCat = data.length || 1;
@@ -543,6 +539,11 @@ function switchTab(tab) {
   if (dataTab) dataTab.style.display = tab === 'data' ? 'block' : 'none';
   
   renderCurrentTab();
+  
+  // Close mobile menu after tab change on mobile
+  if (window.innerWidth <= 1024) {
+    closeMobileMenu();
+  }
 }
 
 async function initAdminPanel() {
@@ -558,6 +559,21 @@ async function initAdminPanel() {
   } finally {
     showLoading(false);
   }
+}
+
+// ==================== MOBILE MENU FUNCTIONS ====================
+function closeMobileMenu() {
+  const sidebar = document.querySelector('.sidebar');
+  const mobileOverlay = document.getElementById('mobileOverlay');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+  if (mobileOverlay) mobileOverlay.classList.remove('active');
+}
+
+function openMobileMenu() {
+  const sidebar = document.querySelector('.sidebar');
+  const mobileOverlay = document.getElementById('mobileOverlay');
+  if (sidebar) sidebar.classList.add('mobile-open');
+  if (mobileOverlay) mobileOverlay.classList.add('active');
 }
 
 // ==================== INIT ====================
@@ -584,6 +600,43 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const modalSaveBtn = document.getElementById('modalSaveBtn');
   if (modalSaveBtn) modalSaveBtn.addEventListener('click', saveModal);
+  
+  // Mobile Menu
+  const mobileToggle = document.getElementById('mobileMenuToggle');
+  const mobileOverlay = document.getElementById('mobileOverlay');
+  
+  if (mobileToggle) {
+    mobileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sidebar = document.querySelector('.sidebar');
+      if (sidebar && sidebar.classList.contains('mobile-open')) {
+        closeMobileMenu();
+      } else {
+        openMobileMenu();
+      }
+    });
+  }
+  
+  if (mobileOverlay) {
+    mobileOverlay.addEventListener('click', closeMobileMenu);
+  }
+  
+  // Close mobile menu when clicking a nav item (on mobile)
+  const navItemsMobile = document.querySelectorAll('.nav-item');
+  navItemsMobile.forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 1024) {
+        closeMobileMenu();
+      }
+    });
+  });
+  
+  // Handle window resize - reset mobile menu state
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 1024) {
+      closeMobileMenu();
+    }
+  });
   
   openLogin();
 });
