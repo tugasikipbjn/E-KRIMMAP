@@ -1,10 +1,18 @@
 // ==================== GOOGLE SHEETS CONFIG ====================
 const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycby8dIleiZo_zj0ufeKY_Ulp9632Me5xFdeX2mPV6G2qdM_Tf3P9WvrtLck02D4otYYJ/exec';
 
-// ==================== CONSTANTS ====================
-const AREA_BOUNDS = {
-  cepu:    { latMin: -7.18, latMax: -7.08, lngMin: 111.55, lngMax: 111.63 },
-  padangan: { latMin: -7.14, latMax: -7.06, lngMin: 111.46, lngMax: 111.54 }
+// ==================== LINGKARAN VALIDASI ====================
+const VALIDATION_CIRCLES = {
+  cepu: {
+    center: { lat: -7.147, lng: 111.585 },
+    radius: 4200,
+    name: 'Kecamatan Cepu'
+  },
+  padangan: {
+    center: { lat: -7.148, lng: 111.640 },
+    radius: 4500,
+    name: 'Kecamatan Padangan'
+  }
 };
 
 const CATS = ['pembunuhan', 'pencurian', 'narkoba', 'kekerasan', 'penipuan', 'lainnya'];
@@ -53,14 +61,20 @@ const TILE_CONFIG = {
 
 /* ═══════════════════ STATE ═══════════════════ */
 let state = {
-  pickMode: false,
   activeFilters: new Set(),
   map: null,
   markers: [],
   currentPanel: null,
   currentTheme: 'arctic',
   currentTileLayer: null,
-  allData: []
+  allData: [],
+  validationCircles: [],
+  currentLocation: null,
+  locationWatchId: null,
+  userMarker: null,
+  isInValidArea: false,
+  currentKecamatan: null,
+  lastDistance: null
 };
 
 /* ═══════════════════ NOTIFICATION STORAGE ═══════════════════ */
@@ -172,6 +186,308 @@ function toggleTheme() {
   const next = THEMES[(idx + 1) % THEMES.length];
   setTheme(next);
   showToast(`Tema: ${next === 'arctic' ? 'Arctic' : 'Light'}`, 'success');
+}
+
+/* ═══════════════════ GEOLOKASI & VALIDASI ═══════════════════ */
+function calculateDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function checkLocationInArea(lat, lng) {
+  const inCepu = isPointInCircle(lat, lng, 'cepu');
+  const inPadangan = isPointInCircle(lat, lng, 'padangan');
+  
+  if (inCepu) return { valid: true, kecamatan: 'cepu', distance: calculateDistance(lat, lng, VALIDATION_CIRCLES.cepu.center.lat, VALIDATION_CIRCLES.cepu.center.lng) };
+  if (inPadangan) return { valid: true, kecamatan: 'padangan', distance: calculateDistance(lat, lng, VALIDATION_CIRCLES.padangan.center.lat, VALIDATION_CIRCLES.padangan.center.lng) };
+  return { valid: false, kecamatan: null, distance: null };
+}
+
+function isValidLocation(lat, lng, kecamatan) {
+  if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+    return { valid: false, message: 'Lokasi belum terdeteksi' };
+  }
+  
+  let circleToCheck = null;
+  if (kecamatan === 'cepu') {
+    circleToCheck = VALIDATION_CIRCLES.cepu;
+  } else if (kecamatan === 'padangan') {
+    circleToCheck = VALIDATION_CIRCLES.padangan;
+  } else {
+    return { valid: false, message: 'Pilih kecamatan terlebih dahulu' };
+  }
+  
+  const distance = calculateDistance(lat, lng, circleToCheck.center.lat, circleToCheck.center.lng);
+  
+  if (distance <= circleToCheck.radius) {
+    return { valid: true, distance: Math.round(distance), message: '' };
+  } else {
+    return { 
+      valid: false, 
+      distance: Math.round(distance),
+      message: `Lokasi Anda berada di luar ${circleToCheck.name} (jarak ${Math.round(distance)}m, maksimal ${circleToCheck.radius}m)`
+    };
+  }
+}
+
+function isPointInCircle(lat, lng, circleType) {
+  if (!lat || !lng || isNaN(lat) || isNaN(lng)) return false;
+  const circle = VALIDATION_CIRCLES[circleType];
+  if (!circle) return false;
+  const distance = calculateDistance(lat, lng, circle.center.lat, circle.center.lng);
+  return distance <= circle.radius;
+}
+
+// Update UI berdasarkan status lokasi
+function updateLocationUI(lat, lng) {
+  const areaCheck = checkLocationInArea(lat, lng);
+  const submitBtn = document.getElementById('submit-btn');
+  const disabledMsg = document.getElementById('submit-disabled-msg');
+  const outsideWarning = document.getElementById('outside-warning');
+  const liveStatusText = document.getElementById('live-status-text');
+  const liveDistanceText = document.getElementById('live-distance-text');
+  const kecamatanSelect = document.getElementById('f-kecamatan');
+  
+  state.isInValidArea = areaCheck.valid;
+  
+  if (areaCheck.valid) {
+    // User berada di dalam area valid
+    state.currentKecamatan = areaCheck.kecamatan;
+    state.lastDistance = Math.round(areaCheck.distance);
+    
+    if (liveStatusText) {
+      liveStatusText.innerHTML = `<i class="fas fa-check-circle"></i> Di dalam wilayah ${areaCheck.kecamatan === 'cepu' ? 'Cepu' : 'Padangan'}`;
+      liveStatusText.style.color = 'var(--green)';
+    }
+    if (liveDistanceText) {
+      liveDistanceText.textContent = `${state.lastDistance}m dari pusat`;
+      liveDistanceText.style.color = 'var(--green)';
+    }
+    
+    // Aktifkan tombol submit
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('disabled');
+    }
+    if (disabledMsg) disabledMsg.style.display = 'none';
+    if (outsideWarning) outsideWarning.style.display = 'none';
+    
+    // Set kecamatan otomatis jika belum dipilih
+    if (kecamatanSelect && !kecamatanSelect.value) {
+      kecamatanSelect.value = areaCheck.kecamatan;
+    }
+  } else {
+    // User berada di luar area
+    if (liveStatusText) {
+      liveStatusText.innerHTML = `<i class="fas fa-circle-exclamation"></i> Di luar wilayah layanan`;
+      liveStatusText.style.color = 'var(--red)';
+    }
+    if (liveDistanceText) {
+      liveDistanceText.textContent = '';
+    }
+    
+    // Nonaktifkan tombol submit
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('disabled');
+    }
+    if (disabledMsg) disabledMsg.style.display = 'block';
+    if (outsideWarning) outsideWarning.style.display = 'flex';
+  }
+  
+  // Update juga validasi di form
+  validateCurrentLocation();
+}
+
+function startLocationTracking() {
+  if (!navigator.geolocation) {
+    showToast('Browser tidak mendukung geolokasi', 'error');
+    return;
+  }
+  
+  const locStatus = document.getElementById('location-status');
+  const liveStatusText = document.getElementById('live-status-text');
+  
+  if (locStatus) {
+    locStatus.style.display = 'flex';
+    locStatus.className = 'location-status-loading';
+    locStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mendeteksi lokasi...';
+  }
+  if (liveStatusText) {
+    liveStatusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mendeteksi lokasi...';
+  }
+  
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords;
+      state.currentLocation = { lat: latitude, lng: longitude };
+      
+      const latField = document.getElementById('f-lat');
+      const lngField = document.getElementById('f-lng');
+      if (latField) latField.value = latitude.toFixed(6);
+      if (lngField) lngField.value = longitude.toFixed(6);
+      
+      if (locStatus) {
+        locStatus.className = 'location-status-success';
+        locStatus.innerHTML = '<i class="fas fa-check-circle"></i> Lokasi terdeteksi';
+        setTimeout(() => {
+          if (locStatus) locStatus.style.display = 'none';
+        }, 3000);
+      }
+      
+      // Update UI berdasarkan lokasi
+      updateLocationUI(latitude, longitude);
+      
+      // Set kecamatan otomatis
+      const areaCheck = checkLocationInArea(latitude, longitude);
+      if (areaCheck.valid) {
+        const kecamatanSelect = document.getElementById('f-kecamatan');
+        if (kecamatanSelect && !kecamatanSelect.value) {
+          kecamatanSelect.value = areaCheck.kecamatan;
+        }
+      }
+      
+      addUserLocationMarker(latitude, longitude);
+      showToast('Lokasi Anda berhasil dideteksi!', 'success');
+    },
+    (error) => {
+      console.error('Geolocation error:', error);
+      let errorMsg = 'Gagal mendapat lokasi';
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          errorMsg = 'Izin lokasi ditolak. Aktifkan lokasi untuk melanjutkan.';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMsg = 'Lokasi tidak tersedia';
+          break;
+        case error.TIMEOUT:
+          errorMsg = 'Waktu deteksi lokasi habis';
+          break;
+      }
+      if (locStatus) {
+        locStatus.className = 'location-status-error';
+        locStatus.innerHTML = `<i class="fas fa-circle-exclamation"></i> ${errorMsg}`;
+      }
+      if (liveStatusText) {
+        liveStatusText.innerHTML = `<i class="fas fa-circle-exclamation"></i> ${errorMsg}`;
+        liveStatusText.style.color = 'var(--red)';
+      }
+      showToast(errorMsg, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+  
+  if (state.locationWatchId !== null) {
+    navigator.geolocation.clearWatch(state.locationWatchId);
+  }
+  
+  // Watch position untuk update real-time setiap 3 detik
+  state.locationWatchId = navigator.geolocation.watchPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords;
+      state.currentLocation = { lat: latitude, lng: longitude };
+      
+      const latField = document.getElementById('f-lat');
+      const lngField = document.getElementById('f-lng');
+      const panelLapor = document.getElementById('panel-lapor');
+      if (latField && lngField && panelLapor?.classList.contains('open')) {
+        latField.value = latitude.toFixed(6);
+        lngField.value = longitude.toFixed(6);
+      }
+      
+      // Update UI validasi real-time
+      updateLocationUI(latitude, longitude);
+      
+      // Update kecamatan otomatis jika form terbuka
+      const areaCheck = checkLocationInArea(latitude, longitude);
+      if (areaCheck.valid && panelLapor?.classList.contains('open')) {
+        const kecamatanSelect = document.getElementById('f-kecamatan');
+        if (kecamatanSelect && !kecamatanSelect.value) {
+          kecamatanSelect.value = areaCheck.kecamatan;
+        }
+      }
+      
+      updateUserLocationMarker(latitude, longitude);
+    },
+    (error) => {
+      console.warn('Watch position error:', error);
+    },
+    { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+  );
+}
+
+function refreshLocation() {
+  startLocationTracking();
+  showToast('Memperbarui lokasi...', 'info');
+}
+
+function addUserLocationMarker(lat, lng) {
+  if (state.userMarker) {
+    state.userMarker.setLatLng([lat, lng]);
+  } else {
+    state.userMarker = L.marker([lat, lng], {
+      icon: L.divIcon({
+        html: `<div style="width:24px;height:24px;background:#4fc3f7;border:3px solid white;border-radius:50%;box-shadow:0 0 20px #4fc3f7;animation:pulseMarker 1.5s infinite;"></div>`,
+        className: '',
+        iconAnchor: [12, 12]
+      })
+    }).addTo(state.map).bindPopup('<b>📍 Lokasi Anda Saat Ini</b>');
+  }
+}
+
+function updateUserLocationMarker(lat, lng) {
+  if (state.userMarker) {
+    state.userMarker.setLatLng([lat, lng]);
+  } else {
+    addUserLocationMarker(lat, lng);
+  }
+}
+
+function validateCurrentLocation() {
+  const kecamatan = document.getElementById('f-kecamatan')?.value;
+  const lat = parseFloat(document.getElementById('f-lat')?.value);
+  const lng = parseFloat(document.getElementById('f-lng')?.value);
+  let validationMsg = document.getElementById('location-validation-msg');
+  
+  if (!kecamatan || !lat || !lng || isNaN(lat) || isNaN(lng)) {
+    if (validationMsg) validationMsg.style.display = 'none';
+    return;
+  }
+  
+  const validation = isValidLocation(lat, lng, kecamatan);
+  
+  if (!validationMsg) {
+    const newMsg = document.createElement('div');
+    newMsg.id = 'location-validation-msg';
+    newMsg.style.cssText = 'margin-top: 8px; padding: 10px; border-radius: 12px; font-size: 11px; display: flex; align-items: center; gap: 8px;';
+    const coordDiv = document.querySelector('.coord-inputs');
+    if (coordDiv && coordDiv.parentNode) {
+      coordDiv.parentNode.appendChild(newMsg);
+    }
+    validationMsg = document.getElementById('location-validation-msg');
+  }
+  
+  if (validationMsg) {
+    if (!validation.valid) {
+      validationMsg.style.display = 'flex';
+      validationMsg.style.background = 'var(--red-glow)';
+      validationMsg.style.border = '1px solid var(--red)';
+      validationMsg.style.color = 'var(--red)';
+      validationMsg.innerHTML = `<i class="fas fa-circle-exclamation"></i> ${validation.message}`;
+    } else {
+      validationMsg.style.display = 'flex';
+      validationMsg.style.background = 'var(--green-glow)';
+      validationMsg.style.border = '1px solid var(--green)';
+      validationMsg.style.color = 'var(--green)';
+      validationMsg.innerHTML = `<i class="fas fa-check-circle"></i> Lokasi valid! Jarak ${validation.distance}m dari pusat ${kecamatan}`;
+    }
+  }
 }
 
 /* ═══════════════════ GOOGLE SHEETS API ═══════════════════ */
@@ -323,10 +639,18 @@ async function fetchVerifiedData() {
 async function submitLaporan() {
   console.log('submitLaporan called');
   
+  // Cek apakah user berada di area valid
+  if (!state.isInValidArea) {
+    showToast('Anda berada di luar wilayah layanan! Laporan tidak dapat dikirim.', 'error');
+    return;
+  }
+  
   const kategori = document.getElementById('f-kategori')?.value;
   const kecamatan = document.getElementById('f-kecamatan')?.value;
   const lokasi = document.getElementById('f-lokasi')?.value?.trim();
   const tanggal = document.getElementById('f-tanggal')?.value;
+  const lat = parseFloat(document.getElementById('f-lat')?.value) || null;
+  const lng = parseFloat(document.getElementById('f-lng')?.value) || null;
 
   if (!kategori) {
     showToast('Pilih jenis kejadian', 'error');
@@ -344,9 +668,19 @@ async function submitLaporan() {
     showToast('Masukkan tanggal kejadian', 'error');
     return;
   }
-
-  const lat = parseFloat(document.getElementById('f-lat')?.value) || null;
-  const lng = parseFloat(document.getElementById('f-lng')?.value) || null;
+  
+  if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+    showToast('Lokasi belum terdeteksi. Tunggu sebentar...', 'error');
+    return;
+  }
+  
+  // Validasi akhir sebelum kirim
+  const locationValidation = isValidLocation(lat, lng, kecamatan);
+  
+  if (!locationValidation.valid) {
+    showToast(locationValidation.message, 'error');
+    return;
+  }
 
   const reportData = {
     action: 'create',
@@ -372,9 +706,9 @@ async function submitLaporan() {
     
     if (result && result.success) {
       addNotification('Laporan Berhasil Dikirim', 
-        `${CAT_LABELS[kategori]} di ${lokasi} telah dikirim ke admin.`, 'success');
+        `${CAT_LABELS[kategori]} di ${lokasi} (${locationValidation.distance}m dari pusat ${kecamatan}) telah dikirim ke admin.`, 'success');
       
-      const formFields = ['f-kategori', 'f-kecamatan', 'f-lokasi', 'f-lat', 'f-lng', 'f-deskripsi', 'f-pelapor'];
+      const formFields = ['f-kategori', 'f-lokasi', 'f-deskripsi', 'f-pelapor'];
       formFields.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
@@ -385,9 +719,8 @@ async function submitLaporan() {
       }
       
       closePanel('lapor');
-      showToast('Laporan terkirim! Menunggu verifikasi admin.', 'success');
+      showToast(`Laporan terkirim! Lokasi valid (${locationValidation.distance}m dari pusat ${kecamatan})`, 'success');
       
-      // Refresh riwayat setelah submit
       setTimeout(() => {
         renderRiwayat();
       }, 2000);
@@ -414,7 +747,7 @@ function showLoading(show) {
   if (loader) loader.style.display = show ? 'flex' : 'none';
 }
 
-/* ═══════════════════ BOOT SCREEN ═══════════════════ */
+/* ═══════════════════ BOOT SCREEN & INIT ═══════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
   const savedTheme = loadTheme();
   setTheme(savedTheme);
@@ -444,13 +777,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 80);
 });
 
-/* ═══════════════════ INITIALIZATION ═══════════════════ */
 async function initApp() {
   initMap();
   initFilters();
   initLegend();
   
-  // Load data dari server
   await fetchVerifiedData();
   await renderRiwayat();
   
@@ -464,12 +795,25 @@ async function initApp() {
   if (!notifs.length) {
     addNotification(
       'Selamat Datang di E-KRIMMAP',
-      'Sistem pemetaan kriminalitas Cepu & Padangan siap digunakan.',
+      'Sistem pemetaan kriminalitas Kecamatan Cepu & Padangan siap digunakan.\nLokasi Anda akan terdeteksi otomatis. Laporan hanya dapat dikirim dari dalam wilayah layanan.',
       'welcome'
     );
   }
   
-  // Auto refresh every 30 seconds
+  const kecamatanSelect = document.getElementById('f-kecamatan');
+  if (kecamatanSelect) {
+    kecamatanSelect.addEventListener('change', validateCurrentLocation);
+  }
+  
+  const latField = document.getElementById('f-lat');
+  const lngField = document.getElementById('f-lng');
+  if (latField && lngField) {
+    latField.addEventListener('input', validateCurrentLocation);
+    lngField.addEventListener('input', validateCurrentLocation);
+  }
+  
+  startLocationTracking();
+  
   setInterval(async () => {
     await fetchVerifiedData();
     await renderRiwayat();
@@ -481,7 +825,7 @@ function initMap() {
   state.map = L.map('map', { 
     zoomControl: false, 
     attributionControl: false 
-  }).setView([-7.115, 111.548], 12);
+  }).setView([-7.140, 111.600], 12);
 
   const config = TILE_CONFIG[state.currentTheme];
   state.currentTileLayer = L.tileLayer(config.url, {
@@ -491,43 +835,51 @@ function initMap() {
 
   L.control.zoom({ position: 'bottomright' }).addTo(state.map);
 
-  L.circle([-7.130, 111.591], {
-    radius: 3500,
+  const cepuCircle = L.circle([-7.147, 111.585], {
+    radius: 4200,
     color: '#4fc3f7',
     weight: 2,
     fillColor: '#4fc3f7',
-    fillOpacity: 0.04,
+    fillOpacity: 0.08,
     dashArray: '8,6'
-  }).addTo(state.map);
+  }).addTo(state.map).bindPopup(`
+    <b>KECAMATAN CEPU</b><br>
+    <hr style="margin:4px 0">
+    <b>🗺️ 11 Desa:</b><br>
+    Cabeyan • Gadon • Getas • Jipang • Kapuan<br>
+    Kentong • Mernung • Mulyorejo • Ngloram<br>
+    Ngroto • Sumberpitu<br><br>
+    <b>🏙️ 6 Kelurahan:</b><br>
+    Balun • Cepu • Karangboyo • Ngelo<br>
+    Nglanjuk • Tambakromo
+  `);
+  
+  state.validationCircles.push(cepuCircle);
 
-  L.circle([-7.102, 111.502], {
-    radius: 3000,
+  const padanganCircle = L.circle([-7.148, 111.640], {
+    radius: 4500,
     color: '#7e57c2',
     weight: 2,
     fillColor: '#7e57c2',
-    fillOpacity: 0.04,
+    fillOpacity: 0.08,
     dashArray: '8,6'
-  }).addTo(state.map);
-
-  state.map.on('click', handleMapClick);
+  }).addTo(state.map).bindPopup(`
+    <b>KECAMATAN PADANGAN</b><br>
+    <hr style="margin:4px 0">
+    <b>🗺️ 16 Desa:</b><br>
+    Banjarejo • Cendono • Dengok • Kebonagung<br>
+    Kendung • Kuncen • Ngasinan • Ngeper<br>
+    Ngradin • Nguken • Padangan • Prangi<br>
+    Purworejo • Sidorejo • Sonorejo • Tebon
+  `);
+  
+  state.validationCircles.push(padanganCircle);
   
   setTimeout(() => {
     if (state.map) {
       state.map.invalidateSize();
     }
   }, 100);
-}
-
-function handleMapClick(e) {
-  if (!state.pickMode) return;
-  const { lat, lng } = e.latlng;
-  const latEl = document.getElementById('f-lat');
-  const lngEl = document.getElementById('f-lng');
-  if (latEl) latEl.value = lat.toFixed(6);
-  if (lngEl) lngEl.value = lng.toFixed(6);
-  stopPickMode();
-  openPanel('lapor');
-  showToast('Lokasi dipilih', 'success');
 }
 
 function makeIcon(k, sev) {
@@ -573,7 +925,7 @@ function renderMarkersFromData(data) {
   });
 }
 
-/* ═══════════════════ FILTERS ═══════════════════ */
+/* ═══════════════════ FILTERS & LEGEND ═══════════════════ */
 function initFilters() {
   const container = document.getElementById('filter-chips');
   if (!container) return;
@@ -737,22 +1089,7 @@ function formatTime(iso) {
   return d.toLocaleDateString('id-ID');
 }
 
-/* ═══════════════════ LAPORAN ═══════════════════ */
-function startPickMode() {
-  state.pickMode = true;
-  const toast = document.getElementById('pick-toast');
-  if (toast) toast.classList.add('show');
-  if (state.map) state.map.getContainer().style.cursor = 'crosshair';
-  closePanel('lapor');
-}
-
-function stopPickMode() {
-  state.pickMode = false;
-  const toast = document.getElementById('pick-toast');
-  if (toast) toast.classList.remove('show');
-  if (state.map) state.map.getContainer().style.cursor = '';
-}
-
+/* ═══════════════════ RIWAYAT & STATISTIK ═══════════════════ */
 async function renderRiwayat() {
   const container = document.getElementById('riwayat-content');
   if (!container) return;
@@ -863,7 +1200,7 @@ function renderStatistik() {
   `;
 }
 
-/* ═══════════════════ TOAST ═══════════════════ */
+/* ═══════════════════ TOAST & UTILITIES ═══════════════════ */
 function showToast(msg, type = 'success') {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -883,7 +1220,6 @@ function showToast(msg, type = 'success') {
   }, 4000);
 }
 
-/* ═══════════════════ UTILITIES ═══════════════════ */
 function escapeHtml(str) {
   if (!str) return '';
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -899,17 +1235,7 @@ window.closeNotifPanel = closeNotifPanel;
 window.clearAllNotifications = clearAllNotifications;
 window.markNotifRead = markNotifRead;
 window.deleteNotification = deleteNotification;
-window.startPickMode = startPickMode;
-window.stopPickMode = stopPickMode;
 window.submitLaporan = submitLaporan;
 window.toggleTheme = toggleTheme;
+window.refreshLocation = refreshLocation;
 window.focusCategory = (c) => showToast(`Filter: ${c}`, 'success');
-
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes pulseMarker {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.1); }
-  }
-`;
-document.head.appendChild(style);
