@@ -247,86 +247,6 @@
   }
   .btn-secondary:hover { background: rgba(0,220,255,0.1); }
 
-  /* ─── MAP PREVIEW ─── */
-  .map-preview {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    max-width: 860px;
-    margin: 48px auto 0;
-    padding: 0 0px;
-    animation: fadeUp 0.8s 0.4s ease both;
-  }
-
-  .map-frame {
-    border: 1px solid var(--border);
-    background: var(--surface);
-    padding: 3px;
-    position: relative;
-    overflow: hidden;
-  }
-  .map-frame::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(0,220,255,0.06) 0%, transparent 50%, rgba(255,60,110,0.04) 100%);
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .map-inner {
-    background: #0a1a28;
-    height: clamp(180px, 45vw, 320px);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .map-inner::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 60px;
-    background: linear-gradient(transparent, rgba(0,220,255,0.04), transparent);
-    animation: scanline 3s linear infinite;
-    pointer-events: none;
-    z-index: 4;
-  }
-
-  .map-dots { position: absolute; inset: 0; width: 100%; height: 100%; }
-
-  .map-bar {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 30px;
-    background: rgba(5,10,15,0.9);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
-    gap: 5px;
-    z-index: 3;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.55rem;
-    color: var(--muted);
-  }
-  .dot { width: 7px; height: 7px; border-radius: 50%; }
-  .dot.r { background: #ff3c6e; }
-  .dot.y { background: #ffe44d; }
-  .dot.g { background: #00e58c; }
-
-  .map-labels {
-    position: absolute;
-    bottom: 10px; left: 50%;
-    transform: translateX(-50%);
-    font-family: 'Space Mono', monospace;
-    font-size: 0.5rem;
-    letter-spacing: 0.12em;
-    color: var(--accent);
-    opacity: 0.6;
-    z-index: 2;
-    white-space: nowrap;
-  }
-
   /* ─── STATS BAR ─── */
   .stats-bar {
     border-top: 1px solid var(--border);
@@ -585,10 +505,6 @@
     from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  @keyframes scanline {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(400%); }
-  }
 
   /* ─── DESKTOP overrides ─── */
   @media (min-width: 640px) {
@@ -690,71 +606,7 @@
     </a>
   </div>
 
-  <div class="map-preview">
-    <div class="map-frame">
-      <div class="map-inner">
-        <div class="map-bar">
-          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
-          <span style="margin-left:6px;">E-KRIMMAP · LIVE VIEW · Cepu & Padangan</span>
-        </div>
-        <svg class="map-dots" viewBox="0 0 900 340" preserveAspectRatio="xMidYMid slice">
-          <line x1="0" y1="170" x2="900" y2="170" stroke="rgba(0,220,255,0.06)" stroke-width="20"/>
-          <line x1="450" y1="0" x2="450" y2="340" stroke="rgba(0,220,255,0.04)" stroke-width="14"/>
-          <line x1="0" y1="100" x2="900" y2="240" stroke="rgba(0,220,255,0.03)" stroke-width="10"/>
-          <line x1="150" y1="0" x2="300" y2="340" stroke="rgba(0,220,255,0.03)" stroke-width="8"/>
-          <line x1="600" y1="0" x2="750" y2="340" stroke="rgba(0,220,255,0.03)" stroke-width="8"/>
-          <line x1="200" y1="0" x2="200" y2="340" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>
-          <line x1="400" y1="0" x2="400" y2="340" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>
-          <line x1="700" y1="0" x2="700" y2="340" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>
-          <line x1="0" y1="120" x2="900" y2="120" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>
-          <line x1="0" y1="220" x2="900" y2="220" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>
 
-          <circle cx="340" cy="155" r="14" fill="rgba(255,60,110,0.15)" stroke="#ff3c6e" stroke-width="1.5"/>
-          <circle cx="340" cy="155" r="4" fill="#ff3c6e">
-            <animate attributeName="r" values="4;8;4" dur="2s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="520" cy="200" r="14" fill="rgba(255,60,110,0.15)" stroke="#ff3c6e" stroke-width="1.5"/>
-          <circle cx="520" cy="200" r="4" fill="#ff3c6e">
-            <animate attributeName="r" values="4;8;4" dur="2.3s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" values="1;0.4;1" dur="2.3s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="220" cy="190" r="12" fill="rgba(255,60,110,0.12)" stroke="#ff3c6e" stroke-width="1.5"/>
-          <circle cx="220" cy="190" r="4" fill="#ff3c6e">
-            <animate attributeName="r" values="4;7;4" dur="1.8s" repeatCount="indefinite"/>
-          </circle>
-
-          <circle cx="660" cy="140" r="12" fill="rgba(255,228,77,0.12)" stroke="#ffe44d" stroke-width="1.5"/>
-          <circle cx="660" cy="140" r="4" fill="#ffe44d">
-            <animate attributeName="r" values="4;7;4" dur="2.5s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="400" cy="90" r="10" fill="rgba(255,228,77,0.1)" stroke="#ffe44d" stroke-width="1.5"/>
-          <circle cx="400" cy="90" r="4" fill="#ffe44d"/>
-          <circle cx="740" cy="220" r="10" fill="rgba(255,228,77,0.1)" stroke="#ffe44d" stroke-width="1.5"/>
-          <circle cx="740" cy="220" r="3" fill="#ffe44d"/>
-
-          <circle cx="130" cy="130" r="8" fill="rgba(0,220,255,0.1)" stroke="#00dcff" stroke-width="1.5"/>
-          <circle cx="130" cy="130" r="3" fill="#00dcff"/>
-          <circle cx="580" cy="270" r="8" fill="rgba(0,220,255,0.1)" stroke="#00dcff" stroke-width="1.5"/>
-          <circle cx="580" cy="270" r="3" fill="#00dcff"/>
-          <circle cx="800" cy="100" r="8" fill="rgba(0,220,255,0.1)" stroke="#00dcff" stroke-width="1.5"/>
-          <circle cx="800" cy="100" r="3" fill="#00dcff"/>
-
-          <text x="240" y="290" font-family="monospace" font-size="9" fill="rgba(0,220,255,0.4)" letter-spacing="2">KEC. CEPU</text>
-          <text x="570" y="290" font-family="monospace" font-size="9" fill="rgba(0,220,255,0.4)" letter-spacing="2">KEC. PADANGAN</text>
-          <line x1="480" y1="60" x2="480" y2="320" stroke="rgba(0,220,255,0.08)" stroke-width="1" stroke-dasharray="4,6"/>
-
-          <circle cx="40" cy="318" r="4" fill="#ff3c6e"/>
-          <text x="50" y="322" font-family="monospace" font-size="8" fill="#888">TINGGI</text>
-          <circle cx="110" cy="318" r="4" fill="#ffe44d"/>
-          <text x="120" y="322" font-family="monospace" font-size="8" fill="#888">SEDANG</text>
-          <circle cx="180" cy="318" r="4" fill="#00dcff"/>
-          <text x="190" y="322" font-family="monospace" font-size="8" fill="#888">RENDAH</text>
-        </svg>
-        <div class="map-labels">CEPU & PADANGAN · KAB. BLORA · JAWA TENGAH</div>
-      </div>
-    </div>
-  </div>
 </section>
 
 <!-- STATS BAR -->
