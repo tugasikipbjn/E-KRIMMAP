@@ -1,1 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>E-KRIMMAP — Admin Panel Professional</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
 
+<div class="admin-container" id="adminContainer" style="display: none;">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">⬡</div>
+        <div>
+          <div class="logo-text">E-KRIMM<span>AP</span></div>
+          <div class="logo-sub">Admin Panel</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      <div class="nav-item active" data-tab="dashboard">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" data-tab="reports">
+        <i class="fas fa-flag"></i>
+        <span>Daftar Laporan</span>
+      </div>
+      <div class="nav-item" data-tab="statistics">
+        <i class="fas fa-chart-pie"></i>
+        <span>Statistik</span>
+      </div>
+      <div class="nav-item" data-tab="data">
+        <i class="fas fa-database"></i>
+        <span>Data Kejadian</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-profile">
+        <div class="admin-avatar">AD</div>
+        <div class="admin-info">
+          <h4>Administrator</h4>
+          <p>E-KRIMMAP System</p>
+        </div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- DASHBOARD TAB -->
+    <div id="dashboardTab">
+      <div class="page-header">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Overview data kriminalitas wilayah Cepu & Padangan</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card primary">
+          <div class="stat-header">
+            <span>TOTAL LAPORAN</span>
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">Seluruh data masuk</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-header">
+            <span>MENUNGGU</span>
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-value" id="statPending">0</div>
+          <div class="stat-label">Perlu ditindaklanjut</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-header">
+            <span>DIPROSES</span>
+            <i class="fas fa-spinner"></i>
+          </div>
+          <div class="stat-value" id="statProcessed">0</div>
+          <div class="stat-label">Sedang ditangani</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-header">
+            <span>SELESAI</span>
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-value" id="statCompleted">0</div>
+          <div class="stat-label">Telah ditangani</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Laporan per Kecamatan</div>
+          <div class="bar-chart" id="kecamatanChart"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Sebaran Kategori</div>
+          <div class="pie-container" id="categoryChart"></div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Wilayah</div>
+        <div class="kecamatan-list" id="kecamatanList"></div>
+      </div>
+    </div>
+
+    <!-- DAFTAR LAPORAN TAB -->
+    <div id="reportsTab" style="display: none;">
+      <div class="page-header">
+        <h1 class="page-title">Daftar Laporan</h1>
+        <p class="page-subtitle">Kelola laporan yang masuk dari warga</p>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">
+            <i class="fas fa-flag" style="margin-right: 8px;"></i>
+            Laporan Masuk
+          </div>
+          <div class="table-search">
+            <input type="text" id="reportSearch" placeholder="Cari laporan...">
+            <button class="btn-icon" onclick="syncDataFromSheet()" style="background: var(--accent-glow); color: var(--accent); border-color: var(--accent);">
+              <i class="fas fa-sync-alt"></i> Sync
+            </button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Kategori</th><th>Lokasi</th><th>Kecamatan</th><th>Tanggal</th><th>Pelapor</th><th>Status</th><th>Aksi</th></tr>
+            </thead>
+            <tbody id="reportsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATISTIK TAB -->
+    <div id="statisticsTab" style="display: none;">
+      <div class="page-header">
+        <h1 class="page-title">Statistik</h1>
+        <p class="page-subtitle">Analisis data kriminalitas</p>
+      </div>
+      <div id="statistikContent"></div>
+    </div>
+
+    <!-- DATA KEJADIAN TAB -->
+    <div id="dataTab" style="display: none;">
+      <div class="page-header">
+        <h1 class="page-title">Data Kejadian</h1>
+        <p class="page-subtitle">Kelola data kejadian terverifikasi</p>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">
+            <i class="fas fa-database" style="margin-right: 8px;"></i>
+            Database Kejadian
+          </div>
+          <div class="table-search">
+            <input type="text" id="dataSearch" placeholder="Cari data...">
+            <button class="btn-icon" onclick="syncDataFromSheet()" style="background: var(--accent-glow); color: var(--accent); border-color: var(--accent);">
+              <i class="fas fa-sync-alt"></i> Sync
+            </button>
+            <button class="btn-icon" id="addDataBtn" style="background: var(--accent); color: white; border: none;">
+              <i class="fas fa-plus"></i> Tambah
+            </button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Kategori</th><th>Judul</th><th>Lokasi</th><th>Kecamatan</th><th>Tanggal</th><th>Risiko</th><th>Aksi</th></tr>
+            </thead>
+            <tbody id="dataTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-icon">
+      <i class="fas fa-shield-halved"></i>
+    </div>
+    <div class="login-logo">E-KRIMMAP</div>
+    <div class="login-sub">ADMIN ACCESS · SECURED</div>
+    <input type="password" class="login-input" id="adminPassword" placeholder="PASSWORD" onkeydown="if(event.key==='Enter')window.doLogin()">
+    <button class="login-btn" onclick="window.doLogin()">
+      <i class="fas fa-arrow-right"></i> MASUK
+    </button>
+    <div class="login-error" id="loginError">❌ Password salah</div>
+  </div>
+</div>
+
+<!-- MODAL TAMBAH/EDIT DATA -->
+<div class="modal-overlay" id="modalOverlay" style="display: none;">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Tambah Kejadian</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Judul</label>
+        <input type="text" class="form-input" id="modalJudul" placeholder="Masukkan judul kejadian">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Kategori</label>
+          <select class="form-input" id="modalKategori">
+            <option value="pencurian">Pencurian</option>
+            <option value="kekerasan">Kekerasan</option>
+            <option value="narkoba">Narkoba</option>
+            <option value="penipuan">Penipuan</option>
+            <option value="pembunuhan">Pembunuhan</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Risiko</label>
+          <select class="form-input" id="modalRisiko">
+            <option value="1">Rendah</option>
+            <option value="2">Sedang</option>
+            <option value="3">Tinggi</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Lokasi</label>
+        <input type="text" class="form-input" id="modalLokasi" placeholder="Alamat lengkap">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Kecamatan</label>
+          <select class="form-input" id="modalKecamatan">
+            <option value="cepu">Cepu</option>
+            <option value="padangan">Padangan</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanggal</label>
+          <input type="date" class="form-input" id="modalTanggal">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Deskripsi</label>
+        <textarea class="form-textarea" id="modalDeskripsi" rows="3" placeholder="Deskripsi kejadian"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Batal</button>
+      <button class="btn-primary" id="modalSaveBtn">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <span>Memuat data...</span>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>
