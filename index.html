@@ -181,12 +181,14 @@
   }
 
   .hero-title {
-    font-size: clamp(2.8rem, 12vw, 7rem);
+    font-size: clamp(2rem, 9vw, 7rem);
     font-weight: 800;
-    line-height: 0.9;
-    letter-spacing: -0.03em;
+    line-height: 1;
+    letter-spacing: -0.02em;
     margin-bottom: 10px;
     animation: fadeUp 0.7s 0.1s ease both;
+    word-break: keep-all;
+    overflow-wrap: normal;
   }
   .hero-title .line2 {
     display: block;
@@ -667,7 +669,7 @@
 <section class="hero">
   <div class="hero-badge">⬡ SISTEM INFORMASI GEOGRAFIS · BLORA</div>
   <h1 class="hero-title">
-    PETA RAWAN
+    PETA RAWAN<br>
     <span class="line2">KRIMINALITAS</span>
     <span class="accent-word">DIGITAL</span>
   </h1>
@@ -753,15 +755,15 @@
 <!-- STATS BAR -->
 <section class="stats-bar">
   <div class="stat-item">
-    <div class="stat-num" id="ctr-total">0</div>
+    <div class="stat-num">0</div>
     <div class="stat-label">Total Kejadian</div>
   </div>
   <div class="stat-item">
-    <div class="stat-num red" id="ctr-tinggi">0</div>
+    <div class="stat-num red">0</div>
     <div class="stat-label">Risiko Tinggi</div>
   </div>
   <div class="stat-item">
-    <div class="stat-num yellow" id="ctr-sedang">0</div>
+    <div class="stat-num yellow">0</div>
     <div class="stat-label">Risiko Sedang</div>
   </div>
   <div class="stat-item">
@@ -860,7 +862,7 @@
 <!-- FOOTER -->
 <footer>
   <div class="footer-logo">E-KRIMM<span>AP</span></div>
-  <div class="footer-copy">© 2025 · KEC. CEPU & PADANGAN · KAB. BLORA</div>
+  <div class="footer-copy">© 2026 · KEC. CEPU & PADANGAN · KAB. BLORA</div>
   <ul class="footer-links">
     <li><a href="public/index.html">Peta</a></li>
     <li><a href="admin/admin.html">Admin</a></li>
@@ -879,29 +881,6 @@
   document.addEventListener('click', e => {
     if (!e.target.closest('nav') && !e.target.closest('#navDrawer')) closeDrawer();
   });
-
-  // Counter animation
-  function animateCounter(el, target, duration = 1600) {
-    let start = 0;
-    const step = target / (duration / 16);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= target) { el.textContent = target; clearInterval(timer); return; }
-      el.textContent = Math.floor(start);
-    }, 16);
-  }
-
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        animateCounter(document.getElementById('ctr-total'), 47);
-        animateCounter(document.getElementById('ctr-tinggi'), 12);
-        animateCounter(document.getElementById('ctr-sedang'), 23);
-        observer.disconnect();
-      }
-    });
-  }, { threshold: 0.3 });
-  observer.observe(document.querySelector('.stats-bar'));
 
   // Scroll reveal
   const revealObserver = new IntersectionObserver(entries => {
