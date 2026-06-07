@@ -157,7 +157,7 @@
   .nav-drawer a:active { background: rgba(0,220,255,0.08); color: var(--accent); }
   .nav-drawer a.accent { color: var(--accent); }
 
-  /* ─── HERO SECTION (FIXED: judul tidak terpotong) ─── */
+  /* ─── HERO SECTION ─── */
   .hero {
     position: relative;
     z-index: 1;
@@ -320,14 +320,16 @@
     width: 42px;
   }
 
-  /* FEATURES */
-  .features {
+  /* HOW IT WORKS */
+  .how {
     padding: 56px 18px;
-    max-width: 1100px;
-    margin: 0 auto;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
     position: relative;
     z-index: 1;
   }
+  .how-inner { max-width: 1100px; margin: 0 auto; }
 
   .section-tag {
     font-family: 'Space Mono', monospace;
@@ -355,58 +357,6 @@
     margin-bottom: 40px;
   }
   .section-title span { color: var(--accent); }
-
-  .features-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .feat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 22px 18px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.2s;
-    border-radius: 8px;
-  }
-  .feat-card:active { background: var(--surface2); transform: scale(0.99); }
-  .feat-icon {
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 18px;
-    font-size: 1.2rem;
-    color: var(--accent);
-    background: rgba(0,220,255,0.08);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-  }
-  .feat-title {
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-  .feat-desc {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.62rem;
-    color: var(--muted);
-    line-height: 1.7;
-  }
-
-  /* HOW IT WORKS */
-  .how {
-    padding: 56px 18px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    position: relative;
-    z-index: 1;
-  }
-  .how-inner { max-width: 1100px; margin: 0 auto; }
 
   .steps {
     display: flex;
@@ -526,9 +476,6 @@
     .stat-item { border-bottom: none; }
     .stat-item:nth-child(2n) { border-right: 1px solid var(--border); }
     .stat-item:last-child { border-right: none; }
-    .features { padding: 80px 36px; }
-    .features-grid { grid-template-columns: repeat(3, 1fr); gap: 2px; }
-    .feat-card { border-radius: 0; }
     .how { padding: 80px 36px; }
     .steps {
       flex-direction: row;
@@ -549,7 +496,7 @@
     }
   }
 
-  /* MOBILE ONLY: judul tidak terpotong, pastikan padding + line-height */
+  /* MOBILE ONLY */
   @media (max-width: 639px) {
     .nav-links, .nav-cta { display: none; }
     .nav-hamburger { display: flex; }
@@ -579,11 +526,9 @@
       padding: 11px 12px;
       font-size: 0.65rem;
     }
-    .feat-card { border-radius: 12px; }
     .step-num { width: 44px; height: 44px; min-width: 44px; }
   }
 
-  /* untuk ponsel dengan notch & landscape kecil */
   @media (max-height: 700px) and (max-width: 639px) {
     .hero { padding: 80px 16px 40px; min-height: auto; }
     .hero-title { font-size: 1.9rem; }
@@ -596,11 +541,10 @@
 </head>
 <body>
 
-<!-- NAVIGATION -->
+<!-- NAVIGATION (Admin Panel link dihilangkan dari drawer & desktop) -->
 <nav>
   <div class="nav-logo">E-KRIMM<span>AP</span></div>
   <ul class="nav-links">
-    <li><a href="#fitur">FITUR</a></li>
     <li><a href="#cara-kerja">CARA KERJA</a></li>
     <li><a href="public/index.html">PETA</a></li>
   </ul>
@@ -610,15 +554,13 @@
   </button>
 </nav>
 
-<!-- MOBILE DRAWER -->
+<!-- MOBILE DRAWER (Tanpa Admin Panel) -->
 <div class="nav-drawer" id="navDrawer">
-  <a href="#fitur" onclick="closeDrawer()"><i class="fas fa-star fa-fw"></i> Fitur Unggulan</a>
   <a href="#cara-kerja" onclick="closeDrawer()"><i class="fas fa-circle-info fa-fw"></i> Cara Kerja</a>
   <a href="public/index.html"><i class="fas fa-map fa-fw"></i> Peta Publik</a>
-  <a href="admin/admin.html" class="accent"><i class="fas fa-lock fa-fw"></i> Admin Panel</a>
 </div>
 
-<!-- HERO SECTION - JUDUL TIDAK TERPOTONG -->
+<!-- HERO SECTION -->
 <section class="hero">
   <div class="hero-badge">⬡ SISTEM INFORMASI GEOGRAFIS · BLORA</div>
   <h1 class="hero-title">
@@ -659,21 +601,7 @@
   </div>
 </section>
 
-<!-- FEATURES -->
-<section class="features" id="fitur">
-  <div class="section-tag">FITUR UTAMA</div>
-  <h2 class="section-title">Dirancang untuk<br><span>Keamanan Wilayah</span></h2>
-  <div class="features-grid">
-    <div class="feat-card"><div class="feat-icon"><i class="fas fa-map-location-dot"></i></div><div class="feat-title">Peta Interaktif</div><div class="feat-desc">Visualisasi titik kriminalitas real-time dengan marker berwarna berdasarkan tingkat risiko.</div></div>
-    <div class="feat-card"><div class="feat-icon"><i class="fas fa-flag"></i></div><div class="feat-title">Laporan Warga</div><div class="feat-desc">Warga dapat melaporkan kejadian via form digital lengkap dengan koordinat & kategori.</div></div>
-    <div class="feat-card"><div class="feat-icon"><i class="fas fa-chart-pie"></i></div><div class="feat-title">Statistik</div><div class="feat-desc">Dashboard statistik dengan grafik distribusi kategori dan sebaran kecamatan.</div></div>
-    <div class="feat-card"><div class="feat-icon"><i class="fas fa-shield-halved"></i></div><div class="feat-title">Admin Panel</div><div class="feat-desc">Panel terproteksi untuk verifikasi laporan dan manajemen data kejadian.</div></div>
-    <div class="feat-card"><div class="feat-icon"><i class="fas fa-bell"></i></div><div class="feat-title">Notifikasi Live</div><div class="feat-desc">Notifikasi real-time saat ada laporan baru masuk di wilayah yang dipantau.</div></div>
-    <div class="feat-card"><div class="feat-icon"><i class="fas fa-mobile-screen"></i></div><div class="feat-title">Mobile Friendly</div><div class="feat-desc">Antarmuka responsif optimal di smartphone, tablet, hingga desktop.</div></div>
-  </div>
-</section>
-
-<!-- HOW IT WORKS -->
+<!-- HOW IT WORKS (Fitur Utama dihapus) -->
 <section class="how" id="cara-kerja">
   <div class="how-inner">
     <div class="section-tag">CARA KERJA</div>
@@ -687,14 +615,13 @@
   </div>
 </section>
 
-<!-- CALL TO ACTION -->
+<!-- CALL TO ACTION (Tombol Admin Panel dihilangkan) -->
 <section class="cta-section">
   <div class="section-tag">MULAI SEKARANG</div>
   <h2 class="cta-title">Pantau Keamanan<br>Wilayahmu</h2>
-  <p class="cta-sub">Akses peta publik atau masuk ke panel admin<br>untuk mengelola data kriminalitas.</p>
+  <p class="cta-sub">Akses peta publik untuk melihat titik-titik rawan kriminalitas di wilayahmu.</p>
   <div class="hero-actions">
     <a href="public/index.html" class="btn-primary"><i class="fas fa-map"></i> PETA PUBLIK</a>
-    <a href="admin/admin.html" class="btn-secondary"><i class="fas fa-lock"></i> ADMIN PANEL</a>
   </div>
 </section>
 
@@ -704,7 +631,6 @@
   <div class="footer-copy">© 2026 · KEC. CEPU & PADANGAN · KAB. BLORA</div>
   <ul class="footer-links">
     <li><a href="public/index.html">Peta</a></li>
-    <li><a href="admin/admin.html">Admin</a></li>
     <li><a href="tel:110">Darurat: 110</a></li>
   </ul>
 </footer>
@@ -764,7 +690,7 @@
   if (statsBar) statsObserver.observe(statsBar);
 
   // scroll reveal
-  const revealItems = document.querySelectorAll('.feat-card, .step');
+  const revealItems = document.querySelectorAll('.step');
   const scrollObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
