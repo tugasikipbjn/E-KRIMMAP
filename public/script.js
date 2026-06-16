@@ -257,7 +257,6 @@ function updateLocationUI(lat, lng) {
   state.isInValidArea = areaCheck.valid;
   
   if (areaCheck.valid) {
-    // User berada di dalam area valid
     state.currentKecamatan = areaCheck.kecamatan;
     state.lastDistance = Math.round(areaCheck.distance);
     
@@ -270,7 +269,6 @@ function updateLocationUI(lat, lng) {
       liveDistanceText.style.color = 'var(--green)';
     }
     
-    // Aktifkan tombol submit
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.classList.remove('disabled');
@@ -278,12 +276,10 @@ function updateLocationUI(lat, lng) {
     if (disabledMsg) disabledMsg.style.display = 'none';
     if (outsideWarning) outsideWarning.style.display = 'none';
     
-    // Set kecamatan otomatis jika belum dipilih
     if (kecamatanSelect && !kecamatanSelect.value) {
       kecamatanSelect.value = areaCheck.kecamatan;
     }
   } else {
-    // User berada di luar area
     if (liveStatusText) {
       liveStatusText.innerHTML = `<i class="fas fa-circle-exclamation"></i> Di luar wilayah layanan`;
       liveStatusText.style.color = 'var(--red)';
@@ -292,7 +288,6 @@ function updateLocationUI(lat, lng) {
       liveDistanceText.textContent = '';
     }
     
-    // Nonaktifkan tombol submit
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.classList.add('disabled');
@@ -301,7 +296,6 @@ function updateLocationUI(lat, lng) {
     if (outsideWarning) outsideWarning.style.display = 'flex';
   }
   
-  // Update juga validasi di form
   validateCurrentLocation();
 }
 
@@ -341,10 +335,8 @@ function startLocationTracking() {
         }, 3000);
       }
       
-      // Update UI berdasarkan lokasi
       updateLocationUI(latitude, longitude);
       
-      // Set kecamatan otomatis
       const areaCheck = checkLocationInArea(latitude, longitude);
       if (areaCheck.valid) {
         const kecamatanSelect = document.getElementById('f-kecamatan');
@@ -387,7 +379,6 @@ function startLocationTracking() {
     navigator.geolocation.clearWatch(state.locationWatchId);
   }
   
-  // Watch position untuk update real-time setiap 3 detik
   state.locationWatchId = navigator.geolocation.watchPosition(
     (position) => {
       const { latitude, longitude } = position.coords;
@@ -401,10 +392,8 @@ function startLocationTracking() {
         lngField.value = longitude.toFixed(6);
       }
       
-      // Update UI validasi real-time
       updateLocationUI(latitude, longitude);
       
-      // Update kecamatan otomatis jika form terbuka
       const areaCheck = checkLocationInArea(latitude, longitude);
       if (areaCheck.valid && panelLapor?.classList.contains('open')) {
         const kecamatanSelect = document.getElementById('f-kecamatan');
@@ -610,37 +599,93 @@ async function restoreLocalBackups() {
 
 async function fetchVerifiedData() {
   try {
+    console.log('📡 Fetching verified data...');
+    
     const url = new URL(GOOGLE_SHEET_API_URL);
     url.searchParams.append('action', 'getVerified');
     url.searchParams.append('_t', Date.now());
     
-    console.log('📡 Fetching verified data:', url.toString());
+    console.log('🌐 URL:', url.toString());
     
     const response = await fetch(url.toString(), {
       method: 'GET',
-      cache: 'no-store'
+      cache: 'no-store',
+      headers: {
+        'Accept': 'application/json'
+      }
     });
+    
+    console.log('📥 Response status:', response.status);
+    
     if (!response.ok) throw new Error('HTTP ' + response.status);
     
     const result = await response.json();
-    console.log('Verified data result:', result);
+    console.log('📦 Raw result:', result);
     
-    if (result.success && Array.isArray(result.data)) {
-      state.allData = result.data;
-      
-      // Update marker dengan filter yang sedang aktif
-      renderMarkersFromData(state.allData);
-      updateStatsFromData(state.allData);
-      
-      // Update jumlah pada filter chips
-      updateFilterCounts(state.allData);
-      
-      return state.allData;
+    if (!result || !result.success) {
+      console.warn('⚠️ API returned error:', result);
+      return [];
     }
     
-    return [];
+    if (!Array.isArray(result.data)) {
+      console.warn('⚠️ Data is not array:', result.data);
+      return [];
+    }
+    
+    console.log(`✅ Received ${result.data.length} records`);
+    
+    // VALIDASI: Cek setiap data
+    const validData = result.data.filter(item => {
+      const lat = parseFloat(item.latitude);
+      const lng = parseFloat(item.longitude);
+      const isValid = !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+      
+      if (!isValid) {
+        console.warn('⚠️ Invalid coordinates for:', item);
+        console.warn(`   lat: ${item.latitude} (${typeof item.latitude}), lng: ${item.longitude} (${typeof item.longitude})`);
+      }
+      
+      return isValid;
+    });
+    
+    console.log(`📍 Valid coordinates: ${validData.length}/${result.data.length}`);
+    
+    if (validData.length === 0) {
+      console.warn('⚠️ No valid data found!');
+      if (result.data.length > 0) {
+        console.log('📌 Sample record:', result.data[0]);
+        console.log('   latitude:', result.data[0].latitude);
+        console.log('   longitude:', result.data[0].longitude);
+        console.log('   kategori:', result.data[0].kategori);
+      }
+      state.allData = [];
+      renderMarkersFromData(state.allData);
+      updateStatsFromData(state.allData);
+      return [];
+    }
+    
+    state.allData = validData;
+    
+    renderMarkersFromData(state.allData);
+    updateStatsFromData(state.allData);
+    updateFilterCounts(state.allData);
+    
+    if (validData.length > 0) {
+      const first = validData[0];
+      const lat = parseFloat(first.latitude);
+      const lng = parseFloat(first.longitude);
+      if (!isNaN(lat) && !isNaN(lng) && state.map) {
+        state.map.setView([lat, lng], 13);
+        console.log(`🔍 Zoom to: ${lat}, ${lng}`);
+      }
+    }
+    
+    showToast(`${validData.length} laporan dimuat`, 'success');
+    return state.allData;
+    
   } catch (error) {
-    console.warn('Fetch verified error:', error);
+    console.error('❌ Fetch error:', error);
+    showToast('Gagal memuat data: ' + error.message, 'error');
     return [];
   }
 }
@@ -649,7 +694,6 @@ async function fetchVerifiedData() {
 async function submitLaporan() {
   console.log('submitLaporan called');
   
-  // Cek apakah user berada di area valid
   if (!state.isInValidArea) {
     showToast('Anda berada di luar wilayah layanan! Laporan tidak dapat dikirim.', 'error');
     return;
@@ -684,7 +728,6 @@ async function submitLaporan() {
     return;
   }
   
-  // Validasi akhir sebelum kirim
   const locationValidation = isValidLocation(lat, lng, kecamatan);
   
   if (!locationValidation.valid) {
@@ -892,59 +935,68 @@ function initMap() {
   }, 100);
 }
 
-function makeIcon(k, sev) {
-  const c = CAT_COLORS[k] || '#90a4ae';
-  const s = sev == 3 ? 28 : sev == 2 ? 20 : 14;
-  return L.divIcon({
-    html: `<div style="width:${s}px;height:${s}px;border-radius:50%;background:${c};border:3px solid rgba(255,255,255,0.9);box-shadow:0 0 ${s}px ${c},0 0 ${s * 2}px ${c}55;animation:pulseMarker 2s infinite;"></div>`,
-    className: '',
-    iconAnchor: [s / 2, s / 2]
-  });
-}
-
 /* ═══════════════════ RENDER MARKERS (REAL-TIME COLOR) ═══════════════════ */
 function renderMarkersFromData(data) {
-  if (!state.map) return;
+  console.log('🔍 [DEBUG] renderMarkersFromData called');
+  console.log('📊 Data length:', data?.length || 0);
+  console.log('🎯 Active filters:', Array.from(state.activeFilters));
   
-  // Hapus semua marker yang ada
+  if (!state.map) {
+    console.error('❌ Map not initialized!');
+    return;
+  }
+  
   state.markers.forEach(m => {
     if (state.map) state.map.removeLayer(m);
   });
   state.markers = [];
   
-  // Jika tidak ada data, keluar
   if (!data || !data.length) {
+    console.warn('⚠️ No data to render');
     updateMapInfo(0);
     return;
   }
   
-  // Filter data berdasarkan kategori yang aktif
   const filteredData = state.activeFilters.size > 0 
     ? data.filter(item => state.activeFilters.has(item.kategori))
     : data;
   
-  // Jika tidak ada data yang cocok dengan filter
+  console.log('📊 Filtered data length:', filteredData.length);
+  
   if (filteredData.length === 0) {
     updateMapInfo(0);
-    // Tampilkan pesan jika ada filter aktif
     if (state.activeFilters.size > 0) {
       showToast('Tidak ada laporan untuk kategori yang dipilih', 'info');
     }
     return;
   }
   
-  // Render marker untuk setiap item
-  filteredData.forEach(item => {
+  let successCount = 0;
+  filteredData.forEach((item, index) => {
+    console.log(`📍 Item ${index}:`, item);
+    
     const lat = parseFloat(item.latitude);
     const lng = parseFloat(item.longitude);
-    if (isNaN(lat) || isNaN(lng)) return;
+    
+    console.log(`   Lat: ${lat}, Lng: ${lng}, Type: ${typeof lat}`);
+    
+    if (isNaN(lat) || isNaN(lng)) {
+      console.warn(`⚠️ Invalid coordinates for item ${index}:`, item);
+      return;
+    }
+    
+    if (lat === 0 && lng === 0) {
+      console.warn(`⚠️ Zero coordinates for item ${index}`);
+      return;
+    }
     
     const kat = item.kategori || 'lainnya';
     const color = CAT_COLORS[kat] || '#90a4ae';
     const sev = item.severity === 'tinggi' ? 3 : (item.severity === 'sedang' ? 2 : 1);
-    
-    // Buat icon dengan ukuran berdasarkan severity
     const size = sev === 3 ? 28 : sev === 2 ? 20 : 14;
+    
+    console.log(`   ✅ Creating marker: ${kat}, color: ${color}, size: ${size}`);
+    
     const icon = L.divIcon({
       html: `
         <div style="
@@ -957,54 +1009,55 @@ function renderMarkersFromData(data) {
           animation: pulseMarker 2s infinite;
           transition: all 0.3s ease;
           cursor: pointer;
-        "></div>
+        ">
+          <span style="position:absolute;top:-8px;right:-8px;font-size:8px;background:rgba(0,0,0,0.7);color:white;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.3);">${index + 1}</span>
+        </div>
       `,
-      className: '',
+      className: 'custom-marker',
       iconAnchor: [size / 2, size / 2]
     });
     
-    const marker = L.marker([lat, lng], { icon });
-    
-    // Popup dengan informasi detail
-    marker.bindPopup(`
-      <div style="min-width:200px;padding:4px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <div style="width:12px;height:12px;border-radius:50%;background:${color};"></div>
-          <strong style="color:${color}">${CAT_LABELS[kat] || kat}</strong>
-          <span style="margin-left:auto;font-size:10px;background:${color}22;padding:2px 8px;border-radius:12px;color:${color};">
-            ${sev === 3 ? '🔴 TINGGI' : sev === 2 ? '🟡 SEDANG' : '🟢 RENDAH'}
-          </span>
-        </div>
-        <div style="font-size:12px;color:var(--tx2);">
-          <i class="fas fa-map-marker-alt" style="margin-right:4px;opacity:0.6;"></i>
-          ${escapeHtml(item.lokasi || '-')}
-        </div>
-        <div style="font-size:11px;color:var(--tx3);margin-top:4px;">
-          <i class="far fa-calendar-alt" style="margin-right:4px;"></i>
-          ${item.tanggal_kejadian || ''}
-        </div>
-        ${item.deskripsi ? `
-          <div style="font-size:11px;color:var(--tx3);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-color);">
-            ${escapeHtml(item.deskripsi.substring(0, 100))}${item.deskripsi.length > 100 ? '...' : ''}
+    try {
+      const marker = L.marker([lat, lng], { icon });
+      
+      marker.bindPopup(`
+        <div style="min-width:200px;padding:4px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="width:12px;height:12px;border-radius:50%;background:${color};"></div>
+            <strong style="color:${color}">${CAT_LABELS[kat] || kat}</strong>
+            <span style="margin-left:auto;font-size:10px;background:${color}22;padding:2px 8px;border-radius:12px;color:${color};">
+              ${sev === 3 ? '🔴 TINGGI' : sev === 2 ? '🟡 SEDANG' : '🟢 RENDAH'}
+            </span>
           </div>
-        ` : ''}
-        <div style="margin-top:6px;font-size:10px;color:var(--tx3);">
-          ✅ Terverifikasi · ${item.kecamatan || '-'}
+          <div style="font-size:12px;color:var(--tx2);">
+            <i class="fas fa-map-marker-alt" style="margin-right:4px;opacity:0.6;"></i>
+            ${escapeHtml(item.lokasi || '-')}
+          </div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:4px;">
+            <i class="far fa-calendar-alt" style="margin-right:4px;"></i>
+            ${item.tanggal_kejadian || ''}
+          </div>
+          <div style="margin-top:6px;font-size:10px;color:var(--tx3);">
+            ✅ Terverifikasi · ${item.kecamatan || '-'}
+          </div>
         </div>
-      </div>
-    `);
-    
-    marker.addTo(state.map);
-    state.markers.push(marker);
+      `);
+      
+      marker.addTo(state.map);
+      state.markers.push(marker);
+      successCount++;
+      
+    } catch (err) {
+      console.error(`❌ Error creating marker ${index}:`, err);
+    }
   });
   
-  // Update info jumlah marker
+  console.log(`✅ Successfully created ${successCount} markers`);
   updateMapInfo(state.markers.length);
   
-  // Tampilkan jumlah marker yang muncul
-  if (state.activeFilters.size > 0) {
+  if (state.activeFilters.size > 0 && successCount > 0) {
     const filterNames = Array.from(state.activeFilters).map(f => CAT_LABELS[f]).join(', ');
-    showToast(`${state.markers.length} laporan ditampilkan (${filterNames})`, 'success');
+    showToast(`${successCount} laporan ditampilkan (${filterNames})`, 'success');
   }
 }
 
@@ -1061,14 +1114,12 @@ function resetFilters() {
 function quickFilter(kategori) {
   if (!kategori) return;
   
-  // Reset semua filter
   state.activeFilters.clear();
   document.querySelectorAll('.filter-chip').forEach(el => {
     el.classList.remove('active');
     el.style.transform = 'scale(1)';
   });
   
-  // Aktifkan filter yang dipilih
   state.activeFilters.add(kategori);
   const chips = document.querySelectorAll('.filter-chip[data-category]');
   chips.forEach(el => {
@@ -1078,7 +1129,6 @@ function quickFilter(kategori) {
     }
   });
   
-  // Update marker
   renderMarkersFromData(state.allData);
   showToast(`Filter: ${CAT_LABELS[kategori]}`, 'success');
 }
@@ -1095,14 +1145,12 @@ function initFilters() {
     btn.dataset.category = k;
     btn.innerHTML = `<i class="fas ${CAT_ICONS[k]}"></i> ${CAT_LABELS[k]}`;
     
-    // Tampilkan jumlah data untuk setiap kategori
     const count = state.allData.filter(d => d.kategori === k).length;
     if (count > 0) {
       btn.innerHTML += ` <span class="count-badge">${count}</span>`;
     }
     
     btn.onclick = () => {
-      // Toggle filter
       if (state.activeFilters.has(k)) {
         state.activeFilters.delete(k);
         btn.classList.remove('active');
@@ -1111,15 +1159,11 @@ function initFilters() {
         state.activeFilters.add(k);
         btn.classList.add('active');
         btn.style.transform = 'scale(1.05)';
-        
-        // Animasi highlight pada kategori yang dipilih
         showToast(`Menampilkan: ${CAT_LABELS[k]}`, 'info');
       }
       
-      // Update marker secara real-time
       renderMarkersFromData(state.allData);
       
-      // Update statistik jika panel statistik terbuka
       if (state.currentPanel === 'statistik') {
         renderStatistik();
       }
@@ -1128,7 +1172,6 @@ function initFilters() {
     container.appendChild(btn);
   });
   
-  // Tambahkan tombol reset filter
   const resetBtn = document.createElement('button');
   resetBtn.className = 'filter-reset-btn';
   resetBtn.innerHTML = '<i class="fas fa-undo"></i> Reset Filter';
