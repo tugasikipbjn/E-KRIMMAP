@@ -16,7 +16,6 @@ const VALIDATION_CIRCLES = {
 };
 
 const CATS = ['pembunuhan', 'pencurian', 'narkoba', 'kekerasan', 'penipuan', 'lainnya'];
-
 const CAT_LABELS = {
   pembunuhan: 'Pembunuhan',
   pencurian: 'Pencurian',
@@ -25,7 +24,6 @@ const CAT_LABELS = {
   penipuan: 'Penipuan',
   lainnya: 'Lainnya'
 };
-
 const CAT_COLORS = {
   pembunuhan: '#ef5350',
   pencurian: '#ffa726',
@@ -34,7 +32,6 @@ const CAT_COLORS = {
   penipuan: '#66bb6a',
   lainnya: '#90a4ae'
 };
-
 const CAT_ICONS = {
   pembunuhan: 'fa-skull',
   pencurian: 'fa-mask',
@@ -45,7 +42,6 @@ const CAT_ICONS = {
 };
 
 const THEMES = ['arctic', 'light'];
-
 const TILE_CONFIG = {
   arctic: {
     url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -77,7 +73,8 @@ let state = {
   userMarker: null,
   isInValidArea: false,
   currentKecamatan: null,
-  lastDistance: null
+  lastDistance: null,
+  isDataLoaded: false
 };
 
 /* ═══════════════════ NOTIFICATION STORAGE ═══════════════════ */
@@ -283,29 +280,34 @@ function updateLocationUI(lat, lng) {
       kecamatanSelect.value = areaCheck.kecamatan;
     }
   } else {
+    // DI LUAR AREA - TETAP TAMPILKAN SEMUA MARKER
     if (liveStatusText) {
-      liveStatusText.innerHTML = `<i class="fas fa-circle-exclamation"></i> Di luar wilayah layanan`;
-      liveStatusText.style.color = 'var(--red)';
+      liveStatusText.innerHTML = `<i class="fas fa-eye"></i> Mode Lihat (Luar Area)`;
+      liveStatusText.style.color = 'var(--accent)';
     }
     if (liveDistanceText) {
-      liveDistanceText.textContent = '⚠️ Hanya melihat marker';
-      liveDistanceText.style.color = 'var(--red)';
+      liveDistanceText.textContent = `👁️ ${state.allData.length} data dimuat`;
+      liveDistanceText.style.color = 'var(--accent)';
     }
     
-    // 🔴 PERUBAHAN: TETAP TAMPILKAN MARKER walaupun di luar area
-    // Tombol submit tetap aktif dengan peringatan
+    // Tombol submit TETAP AKTIF
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.classList.remove('disabled');
     }
     if (disabledMsg) disabledMsg.style.display = 'none';
+    
+    // Peringatan informatif
     if (outsideWarning) {
       outsideWarning.style.display = 'flex';
+      outsideWarning.style.background = 'var(--accent-glow)';
+      outsideWarning.style.border = '2px solid var(--accent)';
+      outsideWarning.style.color = 'var(--accent)';
       outsideWarning.innerHTML = `
         <i class="fas fa-info-circle"></i>
         <div>
-          <strong>ℹ️ Anda berada di luar wilayah layanan</strong><br>
-          <small>Anda tetap dapat melihat semua marker di peta, tetapi laporan hanya dapat dikirim dari dalam wilayah Cepu atau Padangan.</small>
+          <strong>ℹ️ Mode Lihat</strong><br>
+          <small>Anda berada di luar wilayah layanan. Anda tetap dapat melihat semua marker di peta (${state.allData.length} data), tetapi laporan hanya dapat dikirim dari dalam wilayah Cepu atau Padangan.</small>
         </div>
       `;
     }
@@ -736,57 +738,111 @@ function clearAllMarkers() {
 }
 
 function renderAllMarkers() {
+  console.log('🎯 renderAllMarkers() called');
+  console.log('  - state.allData:', state.allData?.length || 0);
+  console.log('  - map ready:', !!state.map);
+  
+  if (!state.map) {
+    console.warn('⚠️ Map not ready yet');
+    return;
+  }
+  
   clearAllMarkers();
   
-  // Render pending markers dari localStorage
+  // Tampilkan SEMUA pending reports
   const pendingReports = getPendingReports();
-  console.log('📌 Rendering pending markers:', pendingReports.length);
+  console.log('  - Pending reports:', pendingReports.length);
   pendingReports.forEach(report => {
     addPendingMarker(report);
   });
   
-  // Render verified markers dari data
-  console.log('📌 Rendering verified markers:', state.allData.length);
-  state.allData.forEach(item => {
-    addVerifiedMarker(item);
-  });
+  // Tampilkan SEMUA verified data
+  console.log('  - Verified data:', state.allData?.length || 0);
+  if (state.allData) {
+    state.allData.forEach(item => {
+      addVerifiedMarker(item);
+    });
+  }
+  
+  const total = state.pendingMarkers.length + state.verifiedMarkers.length;
+  console.log('✅ Total markers ditampilkan:', total);
+  
+  updateStatsFromData(state.allData || []);
 }
 
-// ==================== FETCH DATA ====================
-async function fetchVerifiedData() {
+// ==================== FETCH DATA (FIXED) ====================
+async function fetchVerifiedData(retryCount = 0) {
   try {
+    console.log('📡 Fetching data from server... (attempt ' + (retryCount + 1) + ')');
+    
     const url = new URL(GOOGLE_SHEET_API_URL);
     url.searchParams.append('action', 'getVerified');
     url.searchParams.append('_t', Date.now());
     
-    console.log('📡 Fetching verified data:', url.toString());
-    
     const response = await fetch(url.toString(), {
       method: 'GET',
-      cache: 'no-store'
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
     });
+    
     if (!response.ok) throw new Error('HTTP ' + response.status);
     
     const result = await response.json();
-    console.log('Verified data result:', result);
+    console.log('📊 Server response:', result);
     
     if (result.success && Array.isArray(result.data)) {
       state.allData = result.data;
+      state.isDataLoaded = true;
+      console.log('✅ Data loaded:', state.allData.length, 'records');
       
-      // Bersihkan pending yang sudah terverifikasi
-      const verifiedIds = state.allData.map(d => d.localId || d.id);
-      let pending = getPendingReports();
-      pending = pending.filter(p => !verifiedIds.includes(p.localId));
-      localStorage.setItem('ekrimmap_pending_reports', JSON.stringify(pending));
+      // Cache data
+      try {
+        localStorage.setItem('ekrimmap_cached_data', JSON.stringify(state.allData));
+      } catch(e) {}
       
+      // Render markers
       renderAllMarkers();
       updateStatsFromData(state.allData);
+      updateLocationUI(
+        state.currentLocation?.lat || 0,
+        state.currentLocation?.lng || 0
+      );
+      
       return state.allData;
+    } else {
+      throw new Error('Invalid response from server');
     }
     
-    return [];
   } catch (error) {
-    console.warn('Fetch verified error:', error);
+    console.warn('⚠️ Fetch error:', error.message);
+    
+    // Retry 3 kali dengan jeda
+    if (retryCount < 3) {
+      console.log(`🔄 Retry in ${(retryCount + 1) * 2}s...`);
+      await new Promise(r => setTimeout(r, (retryCount + 1) * 2000));
+      return fetchVerifiedData(retryCount + 1);
+    }
+    
+    // Fallback: pakai data dari cache
+    const cached = localStorage.getItem('ekrimmap_cached_data');
+    if (cached) {
+      try {
+        state.allData = JSON.parse(cached);
+        state.isDataLoaded = true;
+        console.log('📦 Using cached data:', state.allData.length, 'records');
+        renderAllMarkers();
+        updateStatsFromData(state.allData);
+        showToast('📦 Menggunakan data cache', 'info');
+        return state.allData;
+      } catch(e) {}
+    }
+    
+    // Jika semua gagal, set kosong
+    state.allData = [];
+    renderAllMarkers();
+    updateStatsFromData([]);
     return [];
   }
 }
@@ -928,18 +984,28 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initApp() {
+  console.log('🚀 Init App started...');
+  
+  // 1. Init map
   initMap();
   initFilters();
   initLegend();
   
+  // 2. Load data dari server
+  console.log('📡 Loading data from server...');
   await fetchVerifiedData();
+  
+  // 3. Render riwayat
   await renderRiwayat();
   
+  // 4. Update notifikasi
   updateNotifBadge();
 
+  // 5. Set tanggal default
   const tgl = document.getElementById('f-tanggal');
   if (tgl) tgl.value = new Date().toISOString().split('T')[0];
   
+  // 6. Welcome notification
   const notifs = loadNotifications();
   if (!notifs.length) {
     addNotification(
@@ -949,6 +1015,7 @@ async function initApp() {
     );
   }
   
+  // 7. Event listeners
   const kecamatanSelect = document.getElementById('f-kecamatan');
   if (kecamatanSelect) {
     kecamatanSelect.addEventListener('change', validateCurrentLocation);
@@ -961,16 +1028,37 @@ async function initApp() {
     lngField.addEventListener('input', validateCurrentLocation);
   }
   
+  // 8. Start location tracking
   startLocationTracking();
   
+  // 9. Auto sync setiap 10 detik (TERMASUK DI LUAR AREA)
   setInterval(async () => {
+    console.log('🔄 Auto sync...');
     await fetchVerifiedData();
     await renderRiwayat();
-  }, 15000);
+  }, 10000);
+  
+  // 10. Refresh saat tab aktif kembali
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      console.log('👁️ Tab aktif, refresh data...');
+      fetchVerifiedData();
+    }
+  });
+  
+  // 11. Force reload setelah 2 detik (jaga-jaga)
+  setTimeout(async () => {
+    console.log('⏰ Force reload data after 2s...');
+    await fetchVerifiedData();
+  }, 2000);
+  
+  console.log('✅ Init App completed!');
 }
 
 /* ═══════════════════ MAP ═══════════════════ */
 function initMap() {
+  console.log('🗺️ Initializing map...');
+  
   state.map = L.map('map', { 
     zoomControl: false, 
     attributionControl: false 
@@ -1027,8 +1115,12 @@ function initMap() {
   setTimeout(() => {
     if (state.map) {
       state.map.invalidateSize();
+      console.log('🗺️ Map invalidated');
+      renderAllMarkers();
     }
-  }, 100);
+  }, 500);
+  
+  console.log('🗺️ Map initialized');
 }
 
 /* ═══════════════════ FILTERS & LEGEND ═══════════════════ */
@@ -1107,12 +1199,12 @@ function updateStatsFromData(data) {
   const sCepu = document.getElementById('s-cepu');
   
   const pendingCount = getPendingReports().length;
-  const total = data.length + pendingCount;
+  const total = (data?.length || 0) + pendingCount;
   
   if (sTotal) sTotal.textContent = total;
-  if (sTinggi) sTinggi.textContent = data.filter(d => d.severity === 'tinggi').length;
-  if (sSedang) sSedang.textContent = data.filter(d => d.severity === 'sedang').length;
-  if (sCepu) sCepu.textContent = data.filter(d => d.kecamatan === 'cepu').length;
+  if (sTinggi) sTinggi.textContent = data?.filter(d => d.severity === 'tinggi').length || 0;
+  if (sSedang) sSedang.textContent = data?.filter(d => d.severity === 'sedang').length || 0;
+  if (sCepu) sCepu.textContent = data?.filter(d => d.kecamatan === 'cepu').length || 0;
 }
 
 /* ═══════════════════ PANELS ═══════════════════ */
@@ -1243,7 +1335,8 @@ async function renderRiwayat() {
     </div>`;
 
   try {
-    const data = await fetchVerifiedData();
+    // Gunakan data yang sudah ada, jangan fetch ulang
+    const data = state.allData || [];
     const pendingReports = getPendingReports();
 
     const allItems = [
@@ -1446,6 +1539,56 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// ==================== DEBUG TOOLS ====================
+window.debugEKR = {
+  data: () => {
+    console.log('📊 All Data:', state.allData);
+    console.log('📊 Total:', state.allData?.length || 0);
+    return state.allData;
+  },
+  pending: () => {
+    const pending = getPendingReports();
+    console.log('⏳ Pending Reports:', pending);
+    console.log('⏳ Total:', pending.length);
+    return pending;
+  },
+  markers: () => {
+    console.log('📍 Pending Markers:', state.pendingMarkers.length);
+    console.log('📍 Verified Markers:', state.verifiedMarkers.length);
+    console.log('📍 Total:', state.pendingMarkers.length + state.verifiedMarkers.length);
+    return {
+      pending: state.pendingMarkers.length,
+      verified: state.verifiedMarkers.length,
+      total: state.pendingMarkers.length + state.verifiedMarkers.length
+    };
+  },
+  refresh: async () => {
+    console.log('🔄 Manual refresh...');
+    await fetchVerifiedData();
+    console.log('✅ Refresh selesai, total:', state.allData?.length || 0);
+    return state.allData;
+  },
+  status: () => {
+    console.log('🔍 System Status:');
+    console.log('  - Map ready:', !!state.map);
+    console.log('  - Total data:', state.allData?.length || 0);
+    console.log('  - Pending markers:', state.pendingMarkers.length);
+    console.log('  - Verified markers:', state.verifiedMarkers.length);
+    console.log('  - In valid area:', state.isInValidArea);
+    console.log('  - Current location:', state.currentLocation);
+    return {
+      mapReady: !!state.map,
+      totalData: state.allData?.length || 0,
+      pendingMarkers: state.pendingMarkers.length,
+      verifiedMarkers: state.verifiedMarkers.length,
+      inValidArea: state.isInValidArea,
+      currentLocation: state.currentLocation
+    };
+  }
+};
+
+console.log('🔧 Debug tools available: debugEKR.status(), debugEKR.data(), debugEKR.refresh()');
+
 /* ═══════════════════ GLOBAL EXPORTS ═══════════════════ */
 window.switchTab = switchTab;
 window.openPanel = openPanel;
@@ -1460,3 +1603,6 @@ window.submitLaporan = submitLaporan;
 window.toggleTheme = toggleTheme;
 window.refreshLocation = refreshLocation;
 window.focusCategory = (c) => showToast(`Filter: ${c}`, 'success');
+window.debugEKR = debugEKR;
+window.fetchVerifiedData = fetchVerifiedData;
+window.renderAllMarkers = renderAllMarkers;
