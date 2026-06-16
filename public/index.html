@@ -4,12 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>E-KRIMMAP — Peta Rawan Kriminalitas</title>
+
+<!-- Leaflet CSS - WAJIB di sini -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Custom CSS -->
 <link rel="stylesheet" href="style.css">
+
+<!-- Leaflet JS - WAJIB di sini SEBELUM script.js -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 </head>
 <body>
 
@@ -47,9 +58,9 @@
     </div>
   </header>
 
-  <!-- MAP -->
+  <!-- MAP - Pastikan container ini punya ukuran -->
   <main id="map-container">
-    <div id="map"></div>
+    <div id="map" style="width:100%;height:100%;"></div>
   </main>
 
   <!-- LIVE LOCATION INDICATOR -->
@@ -283,6 +294,33 @@
 
 </div>
 
+<!-- SCRIPT JS - PASTIKAN DI SINI (SETELAH Leaflet) -->
 <script src="script.js"></script>
+
+<!-- FALLBACK: Jika map tidak muncul, ini akan membantu -->
+<script>
+  // Emergency fallback jika map tidak muncul
+  document.addEventListener('DOMContentLoaded', function() {
+    // Pastikan map container punya ukuran
+    var mapContainer = document.getElementById('map-container');
+    var mapDiv = document.getElementById('map');
+    
+    if (mapContainer && mapDiv) {
+      // Pastikan container punya ukuran
+      mapContainer.style.width = '100%';
+      mapContainer.style.height = '100%';
+      mapContainer.style.position = 'fixed';
+      mapContainer.style.top = '0';
+      mapContainer.style.left = '0';
+      mapContainer.style.zIndex = '0';
+      
+      mapDiv.style.width = '100%';
+      mapDiv.style.height = '100%';
+    }
+    
+    console.log('✅ HTML Loaded - Map container ready');
+  });
+</script>
+
 </body>
 </html>
