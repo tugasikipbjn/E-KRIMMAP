@@ -1,4 +1,4 @@
-/* ==================== RESET ==================== */
+/* ==================== RESET & BASE ==================== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
@@ -38,7 +38,7 @@ html, body {
   color: var(--tx1);
 }
 
-/* ==================== BOOT ==================== */
+/* ==================== BOOT SCREEN ==================== */
 #boot {
   position: fixed;
   inset: 0;
@@ -200,6 +200,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   transition: all 0.3s ease;
 }
 .top-btn:hover {
@@ -221,6 +222,44 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ==================== LIVE LOCATION ==================== */
+#live-location-indicator {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #4fc3f7;
+  border-radius: 50%;
+  animation: livePulse 1.5s infinite;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.2); }
+}
+#live-status-text {
+  color: var(--tx2);
+}
+#live-distance-text {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 9px;
 }
 
 /* ==================== WIDGETS ==================== */
@@ -530,6 +569,20 @@ html, body {
   border-color: var(--red);
   color: white;
 }
+.notif-clear {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--tx3);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+.notif-clear:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
 
 /* ==================== FORM ==================== */
 .form-group {
@@ -606,6 +659,167 @@ html, body {
   cursor: not-allowed;
   transform: none;
 }
+.warning-banner {
+  background: var(--red-glow);
+  border: 2px solid var(--red);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--red);
+}
+.warning-banner i {
+  font-size: 18px;
+}
+
+/* ==================== NOTIFICATION ==================== */
+.notif-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--tx3);
+}
+.notif-empty i {
+  font-size: 36px;
+  margin-bottom: 10px;
+  opacity: 0.4;
+}
+.notif-item {
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.notif-item:hover {
+  border-color: var(--accent);
+}
+.notif-item.unread {
+  border-left: 3px solid var(--accent);
+}
+.notif-item.read {
+  opacity: 0.7;
+}
+.notif-item-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.notif-item-title {
+  font-family: var(--head);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tx1);
+}
+.notif-item-time {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--tx3);
+}
+.notif-item-body {
+  font-size: 12px;
+  color: var(--tx2);
+  line-height: 1.5;
+}
+.notif-item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.notif-btn {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--tx3);
+  font-family: var(--mono);
+  font-size: 9px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.notif-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.notif-btn.delete:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ==================== ABOUT ==================== */
+.about-content {
+  text-align: center;
+  padding: 20px 10px;
+}
+.about-icon {
+  font-size: 40px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+.about-title {
+  font-family: var(--head);
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+.about-desc {
+  color: var(--tx2);
+  line-height: 1.6;
+  font-size: 13px;
+}
+.info-note {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 16px 0;
+  font-size: 12px;
+  color: var(--tx3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: 1px solid var(--border-color);
+}
+.info-note i {
+  font-size: 18px;
+  color: var(--accent);
+}
+.contact-grid {
+  display: grid;
+  gap: 10px;
+}
+.contact-card {
+  padding: 16px;
+  background: var(--card-bg);
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+.contact-card:hover {
+  border-color: var(--accent);
+}
+.contact-icon {
+  font-size: 24px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.contact-label {
+  font-size: 9px;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+.contact-value {
+  font-family: var(--head);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--accent);
+}
 
 /* ==================== TOAST ==================== */
 #toast-container {
@@ -681,5 +895,10 @@ html, body {
     font-size: 10px;
     padding: 6px 14px;
     bottom: 72px;
+  }
+  #live-location-indicator {
+    bottom: 72px;
+    font-size: 10px;
+    padding: 4px 12px;
   }
 }
