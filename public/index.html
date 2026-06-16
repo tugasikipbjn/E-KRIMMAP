@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>E-KRIMMAP — Peta Rawan Kriminalitas</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<!-- BOOT SCREEN -->
+<div id="boot">
+  <div class="boot-logo">E-KRIMMAP</div>
+  <div class="boot-sub">SISTEM PETA RAWAN KRIMINALITAS</div>
+  <div class="boot-ring"></div>
+  <div class="boot-progress">
+    <div class="boot-progress-bar" id="boot-bar"></div>
+  </div>
+  <div class="boot-msg" id="boot-msg">Memuat sistem...</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <header id="top-bar" class="glass">
+    <div class="logo-compact">
+      <div class="logo-icon"><i class="fas fa-shield-halved"></i></div>
+      <div class="logo-text">E-KRIM<span>MAP</span></div>
+    </div>
+    <div class="top-actions">
+      <button class="top-btn" onclick="toggleTheme()" id="theme-btn" title="Ganti Tema">
+        <i class="fas fa-moon" id="theme-icon"></i>
+      </button>
+      <button class="top-btn" onclick="toggleAlerts()" id="alert-btn" title="Notifikasi">
+        <i class="fas fa-bell"></i>
+        <span class="badge" id="notif-badge" style="display:none">0</span>
+      </button>
+      <button class="top-btn" onclick="toggleSidebar()" title="Menu">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAP -->
+  <main id="map-container">
+    <div id="map"></div>
+  </main>
+
+  <!-- LIVE LOCATION INDICATOR -->
+  <div id="live-location-indicator" class="glass">
+    <div class="live-dot"></div>
+    <span id="live-status-text">Mendeteksi lokasi...</span>
+    <span id="live-distance-text"></span>
+  </div>
+
+  <!-- FLOATING WIDGETS -->
+  <aside class="widgets-container">
+    <!-- STATS WIDGET -->
+    <div id="stats-widget" class="widget glass">
+      <div class="widget-title">Live Stats</div>
+      <div class="stat-grid">
+        <div class="stat-item" onclick="focusCategory('all')">
+          <div class="stat-value accent" id="s-total">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-item" onclick="focusCategory('tinggi')">
+          <div class="stat-value red" id="s-tinggi">0</div>
+          <div class="stat-label">Tinggi</div>
+        </div>
+        <div class="stat-item" onclick="focusCategory('sedang')">
+          <div class="stat-value orange" id="s-sedang">0</div>
+          <div class="stat-label">Sedang</div>
+        </div>
+        <div class="stat-item" onclick="focusCategory('cepu')">
+          <div class="stat-value green" id="s-cepu">0</div>
+          <div class="stat-label">Cepu</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEGEND WIDGET -->
+    <div id="legend-widget" class="widget glass">
+      <div class="legend-title">Kategori</div>
+      <div id="legend-items"></div>
+    </div>
+  </aside>
+
+  <!-- FILTER WIDGET -->
+  <aside id="filter-widget" class="widget glass">
+    <div class="widget-title">Filter</div>
+    <div class="filter-chips" id="filter-chips"></div>
+  </aside>
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottom-nav" class="glass">
+    <button class="nav-item active" onclick="switchTab('peta')" id="nav-peta">
+      <i class="fas fa-map"></i>
+      <span>Peta</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('statistik')" id="nav-statistik">
+      <i class="fas fa-chart-pie"></i>
+      <span>Statistik</span>
+    </button>
+    <button id="fab-lapor" onclick="switchTab('lapor')">
+      <i class="fas fa-plus"></i>
+    </button>
+    <button class="nav-item" onclick="switchTab('riwayat')" id="nav-riwayat">
+      <i class="fas fa-clock-rotate-left"></i>
+      <span>Riwayat</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('info')" id="nav-info">
+      <i class="fas fa-circle-info"></i>
+      <span>Info</span>
+    </button>
+  </nav>
+
+  <!-- SIDE PANELS -->
+  <!-- LAPOR -->
+  <div class="panel-overlay" id="overlay-lapor" onclick="closePanel('lapor')"></div>
+  <div class="side-panel glass" id="panel-lapor">
+    <div class="panel-header">
+      <div class="panel-title">Lapor Kejadian</div>
+      <button class="panel-close" onclick="closePanel('lapor')"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="animate-in">
+      
+      <!-- STATUS LOKASI REAL-TIME -->
+      <div id="location-status" style="display:none;"></div>
+      
+      <!-- PERINGATAN JIKA DI LUAR LINGKARAN -->
+      <div id="outside-warning" style="display:none;" class="warning-banner">
+        <i class="fas fa-circle-exclamation"></i>
+        <div>
+          <strong>⚠️ Anda berada di luar wilayah layanan!</strong><br>
+          <small>Laporan hanya dapat dikirim dari dalam wilayah Kecamatan Cepu atau Padangan.</small>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Jenis Kejadian</label>
+        <select class="form-select" id="f-kategori">
+          <option value="">Pilih Kategori</option>
+          <option value="pencurian">Pencurian</option>
+          <option value="kekerasan">Kekerasan</option>
+          <option value="narkoba">Narkoba</option>
+          <option value="penipuan">Penipuan</option>
+          <option value="pembunuhan">Pembunuhan</option>
+          <option value="lainnya">Lainnya</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Kecamatan</label>
+        <select class="form-select" id="f-kecamatan">
+          <option value="">Pilih Wilayah</option>
+          <option value="cepu">Cepu</option>
+          <option value="padangan">Padangan</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Lokasi / Alamat</label>
+        <input type="text" class="form-input" id="f-lokasi" placeholder="Jl. Pemuda No.10, Cepu">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Tanggal Kejadian</label>
+        <input type="date" class="form-input" id="f-tanggal">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Koordinat (Real-time)</label>
+        <div class="coord-inputs">
+          <input type="text" class="form-input" id="f-lat" placeholder="Latitude" readonly>
+          <input type="text" class="form-input" id="f-lng" placeholder="Longitude" readonly>
+          <button class="pick-map-btn" type="button" onclick="refreshLocation()" title="Refresh Lokasi">
+            <i class="fas fa-location-dot"></i>
+          </button>
+        </div>
+        <div style="font-size:10px; color:var(--tx3); margin-top:6px;">
+          <i class="fas fa-satellite-dish"></i> Lokasi Anda terdeteksi otomatis dan diperbarui setiap 3 detik.
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Deskripsi</label>
+        <textarea class="form-textarea" id="f-deskripsi" placeholder="Ceritakan kejadian..." maxlength="500"></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Nama Pelapor</label>
+        <input type="text" class="form-input" id="f-pelapor" placeholder="Anonim">
+      </div>
+      
+      <button class="btn-glow" id="submit-btn" onclick="submitLaporan()">
+        <i class="fas fa-paper-plane"></i> KIRIM LAPORAN
+      </button>
+      <div id="submit-disabled-msg" style="display:none; text-align:center; margin-top:12px; font-size:11px; color:var(--red);">
+        <i class="fas fa-lock"></i> Laporan tidak dapat dikirim karena Anda berada di luar wilayah layanan
+      </div>
+    </div>
+  </div>
+
+  <!-- STATISTIK -->
+  <div class="panel-overlay" id="overlay-statistik" onclick="closePanel('statistik')"></div>
+  <div class="side-panel glass" id="panel-statistik">
+    <div class="panel-header">
+      <div class="panel-title">Statistik</div>
+      <button class="panel-close" onclick="closePanel('statistik')"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div id="statistik-content"></div>
+  </div>
+
+  <!-- RIWAYAT -->
+  <div class="panel-overlay" id="overlay-riwayat" onclick="closePanel('riwayat')"></div>
+  <div class="side-panel glass" id="panel-riwayat">
+    <div class="panel-header">
+      <div class="panel-title">Riwayat Laporan</div>
+      <button class="panel-close" onclick="closePanel('riwayat')"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div id="riwayat-content"></div>
+  </div>
+
+  <!-- INFO -->
+  <div class="panel-overlay" id="overlay-info" onclick="closePanel('info')"></div>
+  <div class="side-panel glass" id="panel-info">
+    <div class="panel-header">
+      <div class="panel-title">Tentang</div>
+      <button class="panel-close" onclick="closePanel('info')"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="about-content">
+      <div class="about-icon"><i class="fas fa-shield-halved"></i></div>
+      <h2 class="about-title">E-KRIMMAP</h2>
+      <p class="about-desc">
+        Sistem informasi geografis untuk pemetaan daerah rawan kriminalitas 
+        di Kecamatan Cepu & Padangan, Kabupaten Blora.
+      </p>
+      <div class="info-note">
+        <i class="fas fa-info-circle"></i> Sistem melacak lokasi Anda secara real-time. 
+        Laporan hanya dapat dikirim jika Anda berada di dalam wilayah Cepu atau Padangan.
+      </div>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <div class="contact-icon"><i class="fas fa-phone"></i></div>
+          <div class="contact-label">Polisi</div>
+          <div class="contact-value">110</div>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon"><i class="fas fa-truck-medical"></i></div>
+          <div class="contact-label">Ambulans</div>
+          <div class="contact-value">118</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION -->
+  <div class="panel-overlay" id="overlay-notif" onclick="closeNotifPanel()"></div>
+  <div class="side-panel glass" id="panel-notif">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-bell" style="margin-right:8px;"></i>Notifikasi
+        <span class="notif-clear" onclick="clearAllNotifications()">Hapus Semua</span>
+      </div>
+      <button class="panel-close" onclick="closeNotifPanel()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div id="notif-content">
+      <div class="notif-empty">
+        <i class="fas fa-bell-slash"></i>
+        <div>Belum ada notifikasi</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container"></div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
