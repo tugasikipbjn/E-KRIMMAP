@@ -34,10 +34,15 @@ async function fetchFromSheet(action, params = {}) {
         url.searchParams.append(key, params[key]);
       }
     });
+    // FIX: cache-busting agar data selalu fresh dari GAS
+    url.searchParams.append('_t', Date.now());
     
     console.log(`📡 Fetching ${action}:`, url.toString());
     
-    const response = await fetch(url.toString(), { method: 'GET' });
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      cache: 'no-store'
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
     const result = await response.json();
