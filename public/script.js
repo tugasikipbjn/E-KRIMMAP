@@ -612,10 +612,14 @@ async function fetchVerifiedData() {
   try {
     const url = new URL(GOOGLE_SHEET_API_URL);
     url.searchParams.append('action', 'getVerified');
+    url.searchParams.append('_t', Date.now());
     
     console.log('📡 Fetching verified data:', url.toString());
     
-    const response = await fetch(url.toString(), { method: 'GET' });
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      cache: 'no-store'
+    });
     if (!response.ok) throw new Error('HTTP ' + response.status);
     
     const result = await response.json();
@@ -623,8 +627,14 @@ async function fetchVerifiedData() {
     
     if (result.success && Array.isArray(result.data)) {
       state.allData = result.data;
+      
+      // Update marker dengan filter yang sedang aktif
       renderMarkersFromData(state.allData);
       updateStatsFromData(state.allData);
+      
+      // Update jumlah pada filter chips
+      updateFilterCounts(state.allData);
+      
       return state.allData;
     }
     
@@ -720,22 +730,6 @@ async function submitLaporan() {
       
       closePanel('lapor');
       showToast(`Laporan terkirim! Lokasi valid (${locationValidation.distance}m dari pusat ${kecamatan})`, 'success');
-      
-      // Tambahkan marker sementara langsung di peta sesuai warna kategori
-      if (state.map && lat && lng && !isNaN(lat) && !isNaN(lng)) {
-        const pendingMarker = L.marker([lat, lng], { icon: makeIcon(kategori, 2) });
-        const color = CAT_COLORS[kategori] || '#90a4ae';
-        pendingMarker.bindPopup(`
-          <div style="min-width:180px;">
-            <strong style="color:${color}">${CAT_LABELS[kategori] || kategori}</strong>
-            <span style="margin-left:6px;font-size:10px;padding:2px 6px;border-radius:10px;background:${color}22;color:${color};font-weight:700;">PENDING</span><br>
-            <small>${lokasi}</small><br>
-            <small style="opacity:.7">${tanggal} · Menunggu verifikasi</small>
-          </div>`).openPopup();
-        pendingMarker.addTo(state.map);
-        state.markers.push(pendingMarker);
-        state.map.setView([lat, lng], 15, { animate: true });
-      }
       
       setTimeout(() => {
         renderRiwayat();
@@ -833,7 +827,7 @@ async function initApp() {
   setInterval(async () => {
     await fetchVerifiedData();
     await renderRiwayat();
-  }, 30000);
+  }, 10000);
 }
 
 /* ═══════════════════ MAP ═══════════════════ */
@@ -908,37 +902,185 @@ function makeIcon(k, sev) {
   });
 }
 
+/* ═══════════════════ RENDER MARKERS (REAL-TIME COLOR) ═══════════════════ */
 function renderMarkersFromData(data) {
   if (!state.map) return;
   
+  // Hapus semua marker yang ada
   state.markers.forEach(m => {
     if (state.map) state.map.removeLayer(m);
   });
   state.markers = [];
   
-  if (!data || !data.length) return;
+  // Jika tidak ada data, keluar
+  if (!data || !data.length) {
+    updateMapInfo(0);
+    return;
+  }
   
-  data.forEach(item => {
-    if (state.activeFilters.size > 0 && !state.activeFilters.has(item.kategori)) return;
-    
+  // Filter data berdasarkan kategori yang aktif
+  const filteredData = state.activeFilters.size > 0 
+    ? data.filter(item => state.activeFilters.has(item.kategori))
+    : data;
+  
+  // Jika tidak ada data yang cocok dengan filter
+  if (filteredData.length === 0) {
+    updateMapInfo(0);
+    // Tampilkan pesan jika ada filter aktif
+    if (state.activeFilters.size > 0) {
+      showToast('Tidak ada laporan untuk kategori yang dipilih', 'info');
+    }
+    return;
+  }
+  
+  // Render marker untuk setiap item
+  filteredData.forEach(item => {
     const lat = parseFloat(item.latitude);
     const lng = parseFloat(item.longitude);
     if (isNaN(lat) || isNaN(lng)) return;
     
-    const sev = item.severity === 'tinggi' ? 3 : (item.severity === 'sedang' ? 2 : 1);
-    const marker = L.marker([lat, lng], { icon: makeIcon(item.kategori, sev) });
     const kat = item.kategori || 'lainnya';
     const color = CAT_COLORS[kat] || '#90a4ae';
+    const sev = item.severity === 'tinggi' ? 3 : (item.severity === 'sedang' ? 2 : 1);
     
+    // Buat icon dengan ukuran berdasarkan severity
+    const size = sev === 3 ? 28 : sev === 2 ? 20 : 14;
+    const icon = L.divIcon({
+      html: `
+        <div style="
+          width:${size}px;
+          height:${size}px;
+          border-radius:50%;
+          background:${color};
+          border:3px solid rgba(255,255,255,0.9);
+          box-shadow: 0 0 ${size}px ${color}, 0 0 ${size * 2}px ${color}55;
+          animation: pulseMarker 2s infinite;
+          transition: all 0.3s ease;
+          cursor: pointer;
+        "></div>
+      `,
+      className: '',
+      iconAnchor: [size / 2, size / 2]
+    });
+    
+    const marker = L.marker([lat, lng], { icon });
+    
+    // Popup dengan informasi detail
     marker.bindPopup(`
-      <div style="min-width:180px;">
-        <strong style="color:${color}">${CAT_LABELS[kat] || kat}</strong><br>
-        <small>${item.lokasi || '-'}</small><br>
-        <small style="opacity:.7">${item.tanggal_kejadian || ''}</small>
-      </div>`);
+      <div style="min-width:200px;padding:4px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:${color};"></div>
+          <strong style="color:${color}">${CAT_LABELS[kat] || kat}</strong>
+          <span style="margin-left:auto;font-size:10px;background:${color}22;padding:2px 8px;border-radius:12px;color:${color};">
+            ${sev === 3 ? '🔴 TINGGI' : sev === 2 ? '🟡 SEDANG' : '🟢 RENDAH'}
+          </span>
+        </div>
+        <div style="font-size:12px;color:var(--tx2);">
+          <i class="fas fa-map-marker-alt" style="margin-right:4px;opacity:0.6;"></i>
+          ${escapeHtml(item.lokasi || '-')}
+        </div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:4px;">
+          <i class="far fa-calendar-alt" style="margin-right:4px;"></i>
+          ${item.tanggal_kejadian || ''}
+        </div>
+        ${item.deskripsi ? `
+          <div style="font-size:11px;color:var(--tx3);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-color);">
+            ${escapeHtml(item.deskripsi.substring(0, 100))}${item.deskripsi.length > 100 ? '...' : ''}
+          </div>
+        ` : ''}
+        <div style="margin-top:6px;font-size:10px;color:var(--tx3);">
+          ✅ Terverifikasi · ${item.kecamatan || '-'}
+        </div>
+      </div>
+    `);
+    
     marker.addTo(state.map);
     state.markers.push(marker);
   });
+  
+  // Update info jumlah marker
+  updateMapInfo(state.markers.length);
+  
+  // Tampilkan jumlah marker yang muncul
+  if (state.activeFilters.size > 0) {
+    const filterNames = Array.from(state.activeFilters).map(f => CAT_LABELS[f]).join(', ');
+    showToast(`${state.markers.length} laporan ditampilkan (${filterNames})`, 'success');
+  }
+}
+
+/* ═══════════════════ MAP INFO & FILTER HELPERS ═══════════════════ */
+function updateMapInfo(count) {
+  let info = document.getElementById('map-info');
+  if (!info) {
+    info = document.createElement('div');
+    info.id = 'map-info';
+    document.getElementById('map').appendChild(info);
+  }
+  
+  if (count > 0) {
+    info.style.display = 'block';
+    let filterText = '';
+    if (state.activeFilters.size > 0) {
+      filterText = ` · Filter: ${Array.from(state.activeFilters).map(f => CAT_LABELS[f]).join(', ')}`;
+    }
+    info.innerHTML = `
+      <i class="fas fa-map-marker-alt" style="color:var(--accent);margin-right:6px;"></i>
+      Menampilkan <strong style="color:var(--tx1);">${count}</strong> laporan${filterText}
+    `;
+  } else {
+    info.style.display = 'none';
+  }
+}
+
+function updateFilterCounts(data) {
+  document.querySelectorAll('.filter-chip[data-category]').forEach(el => {
+    const cat = el.dataset.category;
+    if (cat) {
+      const count = data.filter(d => d.kategori === cat).length;
+      let badge = el.querySelector('.count-badge');
+      if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline' : 'none';
+      } else if (count > 0) {
+        el.innerHTML += ` <span class="count-badge">${count}</span>`;
+      }
+    }
+  });
+}
+
+function resetFilters() {
+  state.activeFilters.clear();
+  document.querySelectorAll('.filter-chip').forEach(el => {
+    el.classList.remove('active');
+    el.style.transform = 'scale(1)';
+  });
+  renderMarkersFromData(state.allData);
+  showToast('Semua filter direset', 'info');
+}
+
+function quickFilter(kategori) {
+  if (!kategori) return;
+  
+  // Reset semua filter
+  state.activeFilters.clear();
+  document.querySelectorAll('.filter-chip').forEach(el => {
+    el.classList.remove('active');
+    el.style.transform = 'scale(1)';
+  });
+  
+  // Aktifkan filter yang dipilih
+  state.activeFilters.add(kategori);
+  const chips = document.querySelectorAll('.filter-chip[data-category]');
+  chips.forEach(el => {
+    if (el.dataset.category === kategori) {
+      el.classList.add('active');
+      el.style.transform = 'scale(1.05)';
+    }
+  });
+  
+  // Update marker
+  renderMarkersFromData(state.allData);
+  showToast(`Filter: ${CAT_LABELS[kategori]}`, 'success');
 }
 
 /* ═══════════════════ FILTERS & LEGEND ═══════════════════ */
@@ -950,19 +1092,48 @@ function initFilters() {
   CATS.forEach(k => {
     const btn = document.createElement('button');
     btn.className = 'filter-chip';
+    btn.dataset.category = k;
     btn.innerHTML = `<i class="fas ${CAT_ICONS[k]}"></i> ${CAT_LABELS[k]}`;
+    
+    // Tampilkan jumlah data untuk setiap kategori
+    const count = state.allData.filter(d => d.kategori === k).length;
+    if (count > 0) {
+      btn.innerHTML += ` <span class="count-badge">${count}</span>`;
+    }
+    
     btn.onclick = () => {
+      // Toggle filter
       if (state.activeFilters.has(k)) {
         state.activeFilters.delete(k);
         btn.classList.remove('active');
+        btn.style.transform = 'scale(1)';
       } else {
         state.activeFilters.add(k);
         btn.classList.add('active');
+        btn.style.transform = 'scale(1.05)';
+        
+        // Animasi highlight pada kategori yang dipilih
+        showToast(`Menampilkan: ${CAT_LABELS[k]}`, 'info');
       }
+      
+      // Update marker secara real-time
       renderMarkersFromData(state.allData);
+      
+      // Update statistik jika panel statistik terbuka
+      if (state.currentPanel === 'statistik') {
+        renderStatistik();
+      }
     };
+    
     container.appendChild(btn);
   });
+  
+  // Tambahkan tombol reset filter
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'filter-reset-btn';
+  resetBtn.innerHTML = '<i class="fas fa-undo"></i> Reset Filter';
+  resetBtn.onclick = resetFilters;
+  container.appendChild(resetBtn);
 }
 
 function initLegend() {
@@ -1181,24 +1352,71 @@ function renderStatistik() {
   CATS.forEach(c => catCounts[c] = data.filter(d => d.kategori === c).length);
   const maxCount = Math.max(...Object.values(catCounts), 1);
   const total = data.length;
-  const tinggi = data.filter(d => d.severity === 'tinggi').length;
+  const tinggi  = data.filter(d => d.severity === 'tinggi').length;
+  const sedang  = data.filter(d => d.severity === 'sedang').length;
+  const rendah  = data.filter(d => d.severity === 'rendah').length;
+  const totalCepu     = data.filter(d => d.kecamatan === 'cepu').length;
+  const totalPadangan = data.filter(d => d.kecamatan === 'padangan').length;
+  const maxKec = Math.max(totalCepu, totalPadangan, 1);
 
   container.innerHTML = `
     <div class="animate-in">
       <div class="chart-container glass-light">
         <div class="widget-title">Distribusi Kategori</div>
         <div style="display:flex;flex-direction:column;gap:14px;margin-top:18px;">
-          ${CATS.map(k => `
-            <div style="display:flex;align-items:center;gap:14px;">
+          ${CATS.map(k => {
+            const pct = total > 0 ? ((catCounts[k] / total) * 100).toFixed(0) : 0;
+            return `
+            <div style="display:flex;align-items:center;gap:10px;">
               <div style="width:90px;font-size:12px;color:var(--tx2);font-weight:600;">${CAT_LABELS[k]}</div>
               <div style="flex:1;height:10px;background:var(--card-bg);border-radius:5px;overflow:hidden;border:1px solid var(--border-color);">
                 <div style="width:${(catCounts[k] / maxCount) * 100}%;height:100%;background:${CAT_COLORS[k]};border-radius:5px;"></div>
               </div>
-              <div style="width:35px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--tx1);font-weight:700;">${catCounts[k]}</div>
-            </div>
-          `).join('')}
+              <div style="width:28px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--tx1);font-weight:700;">${catCounts[k]}</div>
+              <div style="width:34px;font-size:10px;color:var(--tx3);">(${pct}%)</div>
+            </div>`;
+          }).join('')}
         </div>
       </div>
+
+      <div class="chart-container glass-light">
+        <div class="widget-title">Tingkat Risiko</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px;">
+          <div style="padding:14px 10px;background:var(--red-glow);border-radius:14px;border:2px solid var(--red);text-align:center;">
+            <div style="font-size:28px;font-weight:800;color:var(--red);">${tinggi}</div>
+            <div style="font-size:10px;color:var(--tx3);margin-top:4px;font-weight:700;letter-spacing:0.5px;">TINGGI</div>
+          </div>
+          <div style="padding:14px 10px;background:rgba(255,202,40,0.12);border-radius:14px;border:2px solid #ffca28;text-align:center;">
+            <div style="font-size:28px;font-weight:800;color:#ffca28;">${sedang}</div>
+            <div style="font-size:10px;color:var(--tx3);margin-top:4px;font-weight:700;letter-spacing:0.5px;">SEDANG</div>
+          </div>
+          <div style="padding:14px 10px;background:rgba(102,187,106,0.12);border-radius:14px;border:2px solid #66bb6a;text-align:center;">
+            <div style="font-size:28px;font-weight:800;color:#66bb6a;">${rendah}</div>
+            <div style="font-size:10px;color:var(--tx3);margin-top:4px;font-weight:700;letter-spacing:0.5px;">RENDAH</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-container glass-light">
+        <div class="widget-title">Per Kecamatan</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:80px;font-size:12px;color:var(--tx2);font-weight:600;">Cepu</div>
+            <div style="flex:1;height:12px;background:var(--card-bg);border-radius:6px;overflow:hidden;border:1px solid var(--border-color);">
+              <div style="width:${(totalCepu / maxKec) * 100}%;height:100%;background:#4fc3f7;border-radius:6px;"></div>
+            </div>
+            <div style="width:28px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--tx1);font-weight:700;">${totalCepu}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:80px;font-size:12px;color:var(--tx2);font-weight:600;">Padangan</div>
+            <div style="flex:1;height:12px;background:var(--card-bg);border-radius:6px;overflow:hidden;border:1px solid var(--border-color);">
+              <div style="width:${(totalPadangan / maxKec) * 100}%;height:100%;background:#7e57c2;border-radius:6px;"></div>
+            </div>
+            <div style="width:28px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--tx1);font-weight:700;">${totalPadangan}</div>
+          </div>
+        </div>
+      </div>
+
       <div class="chart-container glass-light">
         <div class="widget-title">Ringkasan</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;">
@@ -1254,4 +1472,6 @@ window.deleteNotification = deleteNotification;
 window.submitLaporan = submitLaporan;
 window.toggleTheme = toggleTheme;
 window.refreshLocation = refreshLocation;
-window.focusCategory = (c) => showToast(`Filter: ${c}`, 'success');
+window.focusCategory = focusCategory;
+window.resetFilters = resetFilters;
+window.quickFilter = quickFilter;
