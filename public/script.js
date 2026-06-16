@@ -73,7 +73,7 @@ let state = {
   currentLocation: null,
   locationWatchId: null,
   userMarker: null,
-  isInValidArea: true, // 🔴 BUG 1 FIX: Selalu true agar data tampil
+  isInValidArea: true,
   currentKecamatan: null,
   refreshInterval: null
 };
@@ -229,7 +229,6 @@ function isValidLocation(lat, lng, kecamatan) {
   };
 }
 
-// 🔴 BUG 1 FIX: updateLocationUI() tidak boleh menghalangi data
 function updateLocationUI(lat, lng) {
   const areaCheck = checkLocationInArea(lat, lng);
   const submitBtn = document.getElementById('submit-btn');
@@ -238,9 +237,7 @@ function updateLocationUI(lat, lng) {
   const liveDistanceText = document.getElementById('live-distance-text');
   const kecamatanSelect = document.getElementById('f-kecamatan');
   
-  // 🔴 BUG 1 FIX: Jangan set state.isInValidArea = false saat di luar area
-  // Biarkan selalu true agar data tetap tampil
-  state.isInValidArea = true; // ← SELALU TRUE, TIDAK PERNAH FALSE
+  state.isInValidArea = true;
   
   const totalData = state.allData?.length || 0;
   const pendingCount = getPendingReports().length;
@@ -264,8 +261,6 @@ function updateLocationUI(lat, lng) {
     if (outsideWarning) outsideWarning.style.display = 'none';
     if (kecamatanSelect && !kecamatanSelect.value) kecamatanSelect.value = areaCheck.kecamatan;
   } else {
-    // DI LUAR AREA - TETAP TAMPILKAN SEMUA DATA
-    // state.isInValidArea tetap true agar data tetap tampil
     if (liveStatusText) {
       liveStatusText.innerHTML = `<i class="fas fa-eye"></i> Mode Lihat (Luar Area)`;
       liveStatusText.style.color = 'var(--accent)';
@@ -514,7 +509,6 @@ function clearAllMarkers() {
   state.verifiedMarkers = [];
 }
 
-// 🔴 BUG 3 FIX: renderAllMarkers() gunakan state.allData dengan benar
 function renderAllMarkers() {
   console.log('🎯 renderAllMarkers() - Total data:', state.allData?.length || 0);
   if (!state.map) return;
@@ -543,7 +537,6 @@ function renderAllMarkers() {
   console.log('✅ renderAllMarkers() - Total:', state.pendingMarkers.length + state.verifiedMarkers.length);
 }
 
-// 🔴 BUG 3 FIX: applyFilters() simpan state dengan benar
 function applyFilters() {
   console.log('🎯 applyFilters() - Active filters:', [...state.activeFilters]);
   
@@ -569,60 +562,61 @@ function applyFilters() {
   console.log('✅ applyFilters() - Pending:', state.pendingMarkers.length, 'Verified:', state.verifiedMarkers.length);
 }
 
-/* ═══════════════════ FETCH DATA ═══════════════════ */
+/* ═══════════════════ FETCH DATA - LANGSUNG DARI SERVER (TANPA CACHE) ═══════════════════ */
 async function fetchVerifiedData() {
   try {
-    console.log('📡 FETCHING DATA...');
+    console.log('📡 FETCHING DATA FROM SERVER...');
+    
+    // 🔴 FORCE: Tambahkan parameter unik untuk menghindari cache
     const url = new URL(GOOGLE_SHEET_API_URL);
     url.searchParams.append('action', 'getVerified');
     url.searchParams.append('_t', Date.now());
+    url.searchParams.append('_cache', Math.random().toString(36).substring(7));
+    
+    console.log('🌐 URL:', url.toString());
     
     const response = await fetch(url.toString(), {
       method: 'GET',
       cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
     
     if (!response.ok) throw new Error('HTTP ' + response.status);
     
     const result = await response.json();
-    console.log('📊 Response:', result);
+    console.log('📊 Server Response:', result);
     
     if (result.success && Array.isArray(result.data)) {
+      // 🔴 SIMPAN DATA KE STATE (TANPA CACHE)
       state.allData = result.data;
-      console.log('✅ Data loaded:', state.allData.length);
+      console.log('✅ Data loaded from SERVER:', state.allData.length, 'records');
       
-      try {
-        localStorage.setItem('ekrimmap_cached_data', JSON.stringify(state.allData));
-      } catch(e) {}
-      
+      // 🔴 RENDER ULANG SEMUA
       renderAllMarkers();
       updateStatsFromData(state.allData);
       updateLocationUI(state.currentLocation?.lat || 0, state.currentLocation?.lng || 0);
       
+      // 🔴 UPDATE RIWAYAT
+      await renderRiwayat();
+      
       return state.allData;
     } else {
-      throw new Error('Invalid response');
+      throw new Error('Invalid response from server');
     }
+    
   } catch (error) {
     console.warn('⚠️ Fetch error:', error.message);
     
-    const cached = localStorage.getItem('ekrimmap_cached_data');
-    if (cached) {
-      try {
-        state.allData = JSON.parse(cached);
-        console.log('📦 Using cache:', state.allData.length);
-        renderAllMarkers();
-        updateStatsFromData(state.allData);
-        updateLocationUI(state.currentLocation?.lat || 0, state.currentLocation?.lng || 0);
-        return state.allData;
-      } catch(e) {}
-    }
-    
+    // 🔴 JANGAN PAKAI CACHE - TAMPILKAN PESAN ERROR
     state.allData = [];
     renderAllMarkers();
     updateStatsFromData([]);
     updateLocationUI(state.currentLocation?.lat || 0, state.currentLocation?.lng || 0);
+    showToast('❌ Gagal memuat data dari server', 'error');
     return [];
   }
 }
@@ -697,7 +691,6 @@ async function sendToGoogleSheets(data) {
 }
 
 /* ═══════════════════ SUBMIT LAPORAN ═══════════════════ */
-// 🔴 BUG 2 FIX: submitLaporan() tetap bisa submit di luar area
 async function submitLaporan() {
   console.log('submitLaporan called');
   
@@ -717,7 +710,6 @@ async function submitLaporan() {
     return;
   }
   
-  // Validasi lokasi tetap dilakukan, tapi hanya untuk peringatan
   const locationValidation = isValidLocation(lat, lng, kecamatan);
   if (!locationValidation.valid) {
     if (!confirm(`⚠️ ${locationValidation.message}\n\nTetap kirim laporan?`)) {
@@ -753,6 +745,8 @@ async function submitLaporan() {
       document.getElementById('f-tanggal').value = new Date().toISOString().split('T')[0];
       closePanel('lapor');
       showToast('Laporan terkirim! Menunggu verifikasi.', 'success');
+      
+      // 🔴 FORCE FETCH ULANG SETELAH SUBMIT
       await fetchVerifiedData();
     } else {
       showToast('Gagal mengirim laporan', 'error');
@@ -776,6 +770,21 @@ function showLoading(show) {
   }
   if (loader) loader.style.display = show ? 'flex' : 'none';
 }
+
+/* ═══════════════════ MANUAL SYNC ═══════════════════ */
+async function manualSync() {
+  console.log('🔄 MANUAL SYNC TRIGGERED');
+  showToast('🔄 Menyinkronkan data dari server...', 'info');
+  
+  await fetchVerifiedData();
+  
+  const total = state.allData?.length || 0;
+  showToast(`✅ Sync selesai! ${total} laporan dimuat`, 'success');
+  
+  return state.allData;
+}
+
+window.manualSync = manualSync;
 
 /* ═══════════════════ BOOT & INIT ═══════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
@@ -806,19 +815,25 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 80);
 });
 
-// 🔴 BUG 1 FIX: Set state.isInValidArea = true dari awal
 async function initApp() {
   console.log('🚀 INIT APP');
   
-  // 🔴 BUG 1 FIX: Set state.isInValidArea = true dari awal
   state.isInValidArea = true;
   
   initMap();
   initFilters();
   initLegend();
   
+  // 🔴 LOAD DATA LANGSUNG DARI SERVER
+  console.log('📡 FORCE LOADING DATA FROM SERVER...');
   await fetchVerifiedData();
-  await renderRiwayat();
+  
+  // 🔴 AUTO REFRESH SETIAP 3 DETIK (LANGSUNG DARI SERVER)
+  if (state.refreshInterval) clearInterval(state.refreshInterval);
+  state.refreshInterval = setInterval(async () => {
+    console.log('🔄 AUTO REFRESH (3s)...');
+    await fetchVerifiedData();
+  }, 3000);
   
   updateNotifBadge();
   
@@ -828,7 +843,7 @@ async function initApp() {
   const notifs = loadNotifications();
   if (!notifs.length) {
     addNotification('Selamat Datang di E-KRIMMAP',
-      'Sistem pemetaan kriminalitas Kecamatan Cepu & Padangan siap digunakan.\nAnda dapat melihat semua marker dan mengirim laporan dari mana saja.',
+      'Sistem pemetaan kriminalitas Kecamatan Cepu & Padangan siap digunakan.\nData sync langsung dari server setiap 3 detik.',
       'welcome');
   }
   
@@ -865,16 +880,10 @@ async function initApp() {
   
   startLocationTracking();
   
-  if (state.refreshInterval) clearInterval(state.refreshInterval);
-  state.refreshInterval = setInterval(async () => {
-    console.log('🔄 AUTO REFRESH (5s)...');
-    await fetchVerifiedData();
-    await renderRiwayat();
-  }, 5000);
-  
+  // 🔴 REFRESH SAAT TAB AKTIF
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-      console.log('👁️ Tab aktif, refresh...');
+      console.log('👁️ Tab aktif, refresh dari server...');
       fetchVerifiedData();
     }
   });
@@ -1280,7 +1289,7 @@ function escapeHtml(str) {
 /* ═══════════════════ DEBUG ═══════════════════ */
 window.debugEKR = {
   data: () => {
-    console.log('📊 Data:', state.allData);
+    console.log('📊 Data dari server:', state.allData);
     return state.allData;
   },
   refresh: async () => {
@@ -1303,8 +1312,6 @@ window.debugEKR = {
   }
 };
 
-window.refreshData = fetchVerifiedData;
-
 /* ═══════════════════ GLOBAL EXPORTS ═══════════════════ */
 window.switchTab = switchTab;
 window.openPanel = openPanel;
@@ -1321,6 +1328,12 @@ window.refreshLocation = refreshLocation;
 window.focusCategory = (c) => showToast(`Filter: ${c}`, 'success');
 window.fetchVerifiedData = fetchVerifiedData;
 window.renderAllMarkers = renderAllMarkers;
-window.refreshData = refreshData;
+window.manualSync = manualSync;
 window.updateStatsFromData = updateStatsFromData;
 window.applyFilters = applyFilters;
+
+console.log('🔧 E-KRIMMAP siap!');
+console.log('🔗 Server URL:', GOOGLE_SHEET_API_URL);
+console.log('🔄 Auto refresh setiap 3 detik (langsung dari server)');
+console.log('📊 Gunakan manualSync() untuk sync manual');
+console.log('🔍 debugEKR.status() untuk cek status');
