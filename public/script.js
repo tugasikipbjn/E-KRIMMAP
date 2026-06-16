@@ -1,5 +1,6 @@
 // ==================== GOOGLE SHEETS CONFIG ====================
-const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycby6mZMrNI8E1H_fh3SSi8SX6fF2kvUsV3BBiAUg9m5nLYuTOEtwD2OPgRiSOG1AjQHL/exec';
+// GANTI DENGAN URL DEPLOY ANDA
+const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycby8dIleiZo_zj0ufeKY_Ulp9632Me5xFdeX2mPV6G2qdM_Tf3P9WvrtLck02D4otYYJ/exec';
 
 // ==================== LINGKARAN VALIDASI ====================
 const VALIDATION_CIRCLES = {
@@ -74,7 +75,8 @@ let state = {
   userMarker: null,
   isInValidArea: false,
   currentKecamatan: null,
-  lastDistance: null
+  lastDistance: null,
+  isMapReady: false
 };
 
 /* ═══════════════════ NOTIFICATION STORAGE ═══════════════════ */
@@ -417,6 +419,7 @@ function refreshLocation() {
 }
 
 function addUserLocationMarker(lat, lng) {
+  if (!state.map) return;
   if (state.userMarker) {
     state.userMarker.setLatLng([lat, lng]);
   } else {
@@ -601,18 +604,13 @@ async function fetchVerifiedData() {
   try {
     console.log('📡 Fetching verified data...');
     
-    const url = new URL(GOOGLE_SHEET_API_URL);
-    url.searchParams.append('action', 'getVerified');
-    url.searchParams.append('_t', Date.now());
+    const url = GOOGLE_SHEET_API_URL + '?action=getVerified&_t=' + Date.now();
     
-    console.log('🌐 URL:', url.toString());
+    console.log('🌐 URL:', url);
     
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: 'GET',
-      cache: 'no-store',
-      headers: {
-        'Accept': 'application/json'
-      }
+      cache: 'no-store'
     });
     
     console.log('📥 Response status:', response.status);
@@ -623,7 +621,8 @@ async function fetchVerifiedData() {
     console.log('📦 Raw result:', result);
     
     if (!result || !result.success) {
-      console.warn('⚠️ API returned error:', result);
+      console.warn('⚠️ API error:', result);
+      showToast('Gagal memuat data dari server', 'error');
       return [];
     }
     
@@ -634,7 +633,7 @@ async function fetchVerifiedData() {
     
     console.log(`✅ Received ${result.data.length} records`);
     
-    // VALIDASI: Cek setiap data
+    // VALIDASI: Cek setiap data - PERBAIKI: pastikan latitude/longitude berupa angka
     const validData = result.data.filter(item => {
       const lat = parseFloat(item.latitude);
       const lng = parseFloat(item.longitude);
@@ -654,27 +653,32 @@ async function fetchVerifiedData() {
       console.warn('⚠️ No valid data found!');
       if (result.data.length > 0) {
         console.log('📌 Sample record:', result.data[0]);
-        console.log('   latitude:', result.data[0].latitude);
-        console.log('   longitude:', result.data[0].longitude);
-        console.log('   kategori:', result.data[0].kategori);
       }
       state.allData = [];
       renderMarkersFromData(state.allData);
       updateStatsFromData(state.allData);
+      showToast('Tidak ada data dengan koordinat valid', 'warn');
       return [];
     }
     
     state.allData = validData;
     
-    renderMarkersFromData(state.allData);
+    // Render markers setelah map siap
+    if (state.isMapReady) {
+      renderMarkersFromData(state.allData);
+    } else {
+      console.log('⏳ Map belum siap, marker akan dirender nanti');
+    }
+    
     updateStatsFromData(state.allData);
     updateFilterCounts(state.allData);
     
-    if (validData.length > 0) {
+    // Zoom ke data pertama
+    if (validData.length > 0 && state.map) {
       const first = validData[0];
       const lat = parseFloat(first.latitude);
       const lng = parseFloat(first.longitude);
-      if (!isNaN(lat) && !isNaN(lng) && state.map) {
+      if (!isNaN(lat) && !isNaN(lng)) {
         state.map.setView([lat, lng], 13);
         console.log(`🔍 Zoom to: ${lat}, ${lng}`);
       }
@@ -831,7 +835,25 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initApp() {
+  console.log('🚀 Initializing App...');
+  
+  // Inisialisasi map dulu
   initMap();
+  
+  // Tunggu map siap
+  await new Promise(resolve => {
+    const checkMap = () => {
+      if (state.map && state.isMapReady) {
+        resolve();
+      } else {
+        setTimeout(checkMap, 100);
+      }
+    };
+    checkMap();
+  });
+  
+  console.log('✅ Map ready, loading data...');
+  
   initFilters();
   initLegend();
   
@@ -870,82 +892,116 @@ async function initApp() {
   setInterval(async () => {
     await fetchVerifiedData();
     await renderRiwayat();
-  }, 10000);
+  }, 30000); // Refresh setiap 30 detik
+  
+  console.log('✅ App initialization complete');
 }
 
 /* ═══════════════════ MAP ═══════════════════ */
 function initMap() {
-  state.map = L.map('map', { 
-    zoomControl: false, 
-    attributionControl: false 
-  }).setView([-7.140, 111.600], 12);
-
-  const config = TILE_CONFIG[state.currentTheme];
-  state.currentTileLayer = L.tileLayer(config.url, {
-    attribution: config.attribution,
-    ...config.options
-  }).addTo(state.map);
-
-  L.control.zoom({ position: 'bottomright' }).addTo(state.map);
-
-  const cepuCircle = L.circle([-7.147, 111.585], {
-    radius: 4200,
-    color: '#4fc3f7',
-    weight: 2,
-    fillColor: '#4fc3f7',
-    fillOpacity: 0.08,
-    dashArray: '8,6'
-  }).addTo(state.map).bindPopup(`
-    <b>KECAMATAN CEPU</b><br>
-    <hr style="margin:4px 0">
-    <b>🗺️ 11 Desa:</b><br>
-    Cabeyan • Gadon • Getas • Jipang • Kapuan<br>
-    Kentong • Mernung • Mulyorejo • Ngloram<br>
-    Ngroto • Sumberpitu<br><br>
-    <b>🏙️ 6 Kelurahan:</b><br>
-    Balun • Cepu • Karangboyo • Ngelo<br>
-    Nglanjuk • Tambakromo
-  `);
+  console.log('🗺️ Initializing map...');
   
-  state.validationCircles.push(cepuCircle);
+  const mapElement = document.getElementById('map');
+  if (!mapElement) {
+    console.error('❌ Map element not found!');
+    return;
+  }
+  
+  // Pastikan map container punya ukuran
+  const container = document.getElementById('map-container');
+  if (container) {
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.zIndex = '0';
+  }
+  
+  try {
+    state.map = L.map('map', { 
+      zoomControl: false, 
+      attributionControl: false 
+    }).setView([-7.140, 111.600], 12);
 
-  const padanganCircle = L.circle([-7.148, 111.640], {
-    radius: 4500,
-    color: '#7e57c2',
-    weight: 2,
-    fillColor: '#7e57c2',
-    fillOpacity: 0.08,
-    dashArray: '8,6'
-  }).addTo(state.map).bindPopup(`
-    <b>KECAMATAN PADANGAN</b><br>
-    <hr style="margin:4px 0">
-    <b>🗺️ 16 Desa:</b><br>
-    Banjarejo • Cendono • Dengok • Kebonagung<br>
-    Kendung • Kuncen • Ngasinan • Ngeper<br>
-    Ngradin • Nguken • Padangan • Prangi<br>
-    Purworejo • Sidorejo • Sonorejo • Tebon
-  `);
-  
-  state.validationCircles.push(padanganCircle);
-  
-  setTimeout(() => {
-    if (state.map) {
-      state.map.invalidateSize();
-    }
-  }, 100);
+    const config = TILE_CONFIG[state.currentTheme];
+    state.currentTileLayer = L.tileLayer(config.url, {
+      attribution: config.attribution,
+      ...config.options
+    }).addTo(state.map);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(state.map);
+
+    // Lingkaran Cepu
+    const cepuCircle = L.circle([-7.147, 111.585], {
+      radius: 4200,
+      color: '#4fc3f7',
+      weight: 2,
+      fillColor: '#4fc3f7',
+      fillOpacity: 0.08,
+      dashArray: '8,6'
+    }).addTo(state.map).bindPopup(`
+      <b>KECAMATAN CEPU</b><br>
+      <hr style="margin:4px 0">
+      <b>🗺️ 11 Desa:</b><br>
+      Cabeyan • Gadon • Getas • Jipang • Kapuan<br>
+      Kentong • Mernung • Mulyorejo • Ngloram<br>
+      Ngroto • Sumberpitu<br><br>
+      <b>🏙️ 6 Kelurahan:</b><br>
+      Balun • Cepu • Karangboyo • Ngelo<br>
+      Nglanjuk • Tambakromo
+    `);
+    state.validationCircles.push(cepuCircle);
+
+    // Lingkaran Padangan
+    const padanganCircle = L.circle([-7.148, 111.640], {
+      radius: 4500,
+      color: '#7e57c2',
+      weight: 2,
+      fillColor: '#7e57c2',
+      fillOpacity: 0.08,
+      dashArray: '8,6'
+    }).addTo(state.map).bindPopup(`
+      <b>KECAMATAN PADANGAN</b><br>
+      <hr style="margin:4px 0">
+      <b>🗺️ 16 Desa:</b><br>
+      Banjarejo • Cendono • Dengok • Kebonagung<br>
+      Kendung • Kuncen • Ngasinan • Ngeper<br>
+      Ngradin • Nguken • Padangan • Prangi<br>
+      Purworejo • Sidorejo • Sonorejo • Tebon
+    `);
+    state.validationCircles.push(padanganCircle);
+    
+    // Tandai map siap
+    state.isMapReady = true;
+    
+    setTimeout(() => {
+      if (state.map) {
+        state.map.invalidateSize();
+        console.log('✅ Map invalidateSize done');
+      }
+    }, 300);
+    
+    console.log('✅ Map initialized successfully');
+    
+  } catch (error) {
+    console.error('❌ Error initializing map:', error);
+  }
 }
 
 /* ═══════════════════ RENDER MARKERS (REAL-TIME COLOR) ═══════════════════ */
 function renderMarkersFromData(data) {
-  console.log('🔍 [DEBUG] renderMarkersFromData called');
+  console.log('🔍 renderMarkersFromData called');
   console.log('📊 Data length:', data?.length || 0);
   console.log('🎯 Active filters:', Array.from(state.activeFilters));
+  console.log('🗺️ Map ready:', state.isMapReady);
   
-  if (!state.map) {
-    console.error('❌ Map not initialized!');
+  if (!state.map || !state.isMapReady) {
+    console.warn('⚠️ Map not ready, markers will be rendered later');
     return;
   }
   
+  // Hapus semua marker yang ada
   state.markers.forEach(m => {
     if (state.map) state.map.removeLayer(m);
   });
@@ -957,6 +1013,7 @@ function renderMarkersFromData(data) {
     return;
   }
   
+  // Filter data berdasarkan kategori yang aktif
   const filteredData = state.activeFilters.size > 0 
     ? data.filter(item => state.activeFilters.has(item.kategori))
     : data;
@@ -973,20 +1030,11 @@ function renderMarkersFromData(data) {
   
   let successCount = 0;
   filteredData.forEach((item, index) => {
-    console.log(`📍 Item ${index}:`, item);
-    
     const lat = parseFloat(item.latitude);
     const lng = parseFloat(item.longitude);
     
-    console.log(`   Lat: ${lat}, Lng: ${lng}, Type: ${typeof lat}`);
-    
-    if (isNaN(lat) || isNaN(lng)) {
+    if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) {
       console.warn(`⚠️ Invalid coordinates for item ${index}:`, item);
-      return;
-    }
-    
-    if (lat === 0 && lng === 0) {
-      console.warn(`⚠️ Zero coordinates for item ${index}`);
       return;
     }
     
@@ -994,8 +1042,6 @@ function renderMarkersFromData(data) {
     const color = CAT_COLORS[kat] || '#90a4ae';
     const sev = item.severity === 'tinggi' ? 3 : (item.severity === 'sedang' ? 2 : 1);
     const size = sev === 3 ? 28 : sev === 2 ? 20 : 14;
-    
-    console.log(`   ✅ Creating marker: ${kat}, color: ${color}, size: ${size}`);
     
     const icon = L.divIcon({
       html: `
@@ -1067,10 +1113,10 @@ function updateMapInfo(count) {
   if (!info) {
     info = document.createElement('div');
     info.id = 'map-info';
-    document.getElementById('map').appendChild(info);
+    document.getElementById('map')?.appendChild(info);
   }
   
-  if (count > 0) {
+  if (count > 0 && info) {
     info.style.display = 'block';
     let filterText = '';
     if (state.activeFilters.size > 0) {
@@ -1080,7 +1126,7 @@ function updateMapInfo(count) {
       <i class="fas fa-map-marker-alt" style="color:var(--accent);margin-right:6px;"></i>
       Menampilkan <strong style="color:var(--tx1);">${count}</strong> laporan${filterText}
     `;
-  } else {
+  } else if (info) {
     info.style.display = 'none';
   }
 }
@@ -1133,6 +1179,21 @@ function quickFilter(kategori) {
   showToast(`Filter: ${CAT_LABELS[kategori]}`, 'success');
 }
 
+function focusCategory(type) {
+  if (type === 'all') {
+    resetFilters();
+    return;
+  }
+  
+  // Cari kategori yang sesuai
+  const found = CATS.find(c => c === type || CAT_LABELS[c] === type);
+  if (found) {
+    quickFilter(found);
+  } else {
+    showToast('Kategori tidak ditemukan', 'error');
+  }
+}
+
 /* ═══════════════════ FILTERS & LEGEND ═══════════════════ */
 function initFilters() {
   const container = document.getElementById('filter-chips');
@@ -1183,7 +1244,7 @@ function initLegend() {
   const container = document.getElementById('legend-items');
   if (!container) return;
   container.innerHTML = CATS.map(k => `
-    <div class="legend-item">
+    <div class="legend-item" onclick="quickFilter('${k}')" style="cursor:pointer;">
       <div class="legend-dot" style="background:${CAT_COLORS[k]};color:${CAT_COLORS[k]}"></div>
       <span>${CAT_LABELS[k]}</span>
     </div>
@@ -1331,7 +1392,7 @@ async function renderRiwayat() {
     </div>`;
 
   try {
-    const data = await fetchVerifiedData();
+    const data = state.allData || [];
 
     if (!data || data.length === 0) {
       container.innerHTML = `
@@ -1518,3 +1579,11 @@ window.refreshLocation = refreshLocation;
 window.focusCategory = focusCategory;
 window.resetFilters = resetFilters;
 window.quickFilter = quickFilter;
+
+console.log('✅ E-KRIMMAP script loaded successfully');
+console.log('🔧 Available commands:');
+console.log('  - state.allData : Lihat semua data');
+console.log('  - state.markers : Lihat marker');
+console.log('  - fetchVerifiedData() : Refresh data');
+console.log('  - resetFilters() : Reset semua filter');
+console.log('  - quickFilter("pencurian") : Filter cepat');
