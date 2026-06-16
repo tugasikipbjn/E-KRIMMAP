@@ -1,5 +1,5 @@
 // ==================== GOOGLE SHEETS CONFIG ====================
-const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycby8dIleiZo_zj0ufeKY_Ulp9632Me5xFdeX2mPV6G2qdM_Tf3P9WvrtLck02D4otYYJ/exec';
+const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxan7JrR9PcA6wKQQcG2y4UCqOaKN5A1SojQF2ktV6gCG8mDxAdSq001Lmwhwj1L-P5/exec';
 
 // ==================== LINGKARAN VALIDASI ====================
 const VALIDATION_CIRCLES = {
