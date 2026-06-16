@@ -4,20 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>E-KRIMMAP — Peta Rawan Kriminalitas</title>
-
-<!-- LEAFET CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-<!-- FONTS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800&family=JetBrains+Mono:wght@500;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- FONT AWESOME -->
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<!-- STYLE CSS -->
 <link rel="stylesheet" href="style.css">
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -56,22 +48,20 @@
   </header>
 
   <!-- MAP -->
-  <div id="map-container">
+  <main id="map-container">
     <div id="map"></div>
-  </div>
+  </main>
 
-  <!-- MAP INFO -->
-  <div id="map-info"></div>
-
-  <!-- LIVE LOCATION -->
+  <!-- LIVE LOCATION INDICATOR -->
   <div id="live-location-indicator" class="glass">
     <div class="live-dot"></div>
     <span id="live-status-text">Mendeteksi lokasi...</span>
     <span id="live-distance-text"></span>
   </div>
 
-  <!-- WIDGETS -->
+  <!-- FLOATING WIDGETS -->
   <aside class="widgets-container">
+    <!-- STATS WIDGET -->
     <div id="stats-widget" class="widget glass">
       <div class="widget-title">Live Stats</div>
       <div class="stat-grid">
@@ -94,13 +84,14 @@
       </div>
     </div>
 
+    <!-- LEGEND WIDGET -->
     <div id="legend-widget" class="widget glass">
       <div class="legend-title">Kategori</div>
       <div id="legend-items"></div>
     </div>
   </aside>
 
-  <!-- FILTER -->
+  <!-- FILTER WIDGET -->
   <aside id="filter-widget" class="widget glass">
     <div class="widget-title">Filter</div>
     <div class="filter-chips" id="filter-chips"></div>
@@ -129,7 +120,7 @@
     </button>
   </nav>
 
-  <!-- PANELS -->
+  <!-- SIDE PANELS -->
   <!-- LAPOR -->
   <div class="panel-overlay" id="overlay-lapor" onclick="closePanel('lapor')"></div>
   <div class="side-panel glass" id="panel-lapor">
@@ -138,7 +129,11 @@
       <button class="panel-close" onclick="closePanel('lapor')"><i class="fas fa-xmark"></i></button>
     </div>
     <div class="animate-in">
+      
+      <!-- STATUS LOKASI REAL-TIME -->
       <div id="location-status" style="display:none;"></div>
+      
+      <!-- PERINGATAN JIKA DI LUAR LINGKARAN -->
       <div id="outside-warning" style="display:none;" class="warning-banner">
         <i class="fas fa-circle-exclamation"></i>
         <div>
@@ -146,6 +141,7 @@
           <small>Laporan hanya dapat dikirim dari dalam wilayah Kecamatan Cepu atau Padangan.</small>
         </div>
       </div>
+      
       <div class="form-group">
         <label class="form-label">Jenis Kejadian</label>
         <select class="form-select" id="f-kategori">
@@ -158,6 +154,7 @@
           <option value="lainnya">Lainnya</option>
         </select>
       </div>
+      
       <div class="form-group">
         <label class="form-label">Kecamatan</label>
         <select class="form-select" id="f-kecamatan">
@@ -166,16 +163,19 @@
           <option value="padangan">Padangan</option>
         </select>
       </div>
+      
       <div class="form-group">
         <label class="form-label">Lokasi / Alamat</label>
         <input type="text" class="form-input" id="f-lokasi" placeholder="Jl. Pemuda No.10, Cepu">
       </div>
+      
       <div class="form-group">
         <label class="form-label">Tanggal Kejadian</label>
         <input type="date" class="form-input" id="f-tanggal">
       </div>
+      
       <div class="form-group">
-        <label class="form-label">Koordinat</label>
+        <label class="form-label">Koordinat (Real-time)</label>
         <div class="coord-inputs">
           <input type="text" class="form-input" id="f-lat" placeholder="Latitude" readonly>
           <input type="text" class="form-input" id="f-lng" placeholder="Longitude" readonly>
@@ -183,15 +183,21 @@
             <i class="fas fa-location-dot"></i>
           </button>
         </div>
+        <div style="font-size:10px; color:var(--tx3); margin-top:6px;">
+          <i class="fas fa-satellite-dish"></i> Lokasi Anda terdeteksi otomatis dan diperbarui setiap 3 detik.
+        </div>
       </div>
+      
       <div class="form-group">
         <label class="form-label">Deskripsi</label>
         <textarea class="form-textarea" id="f-deskripsi" placeholder="Ceritakan kejadian..." maxlength="500"></textarea>
       </div>
+      
       <div class="form-group">
         <label class="form-label">Nama Pelapor</label>
         <input type="text" class="form-input" id="f-pelapor" placeholder="Anonim">
       </div>
+      
       <button class="btn-glow" id="submit-btn" onclick="submitLaporan()">
         <i class="fas fa-paper-plane"></i> KIRIM LAPORAN
       </button>
@@ -231,9 +237,13 @@
     <div class="about-content">
       <div class="about-icon"><i class="fas fa-shield-halved"></i></div>
       <h2 class="about-title">E-KRIMMAP</h2>
-      <p class="about-desc">Sistem informasi geografis untuk pemetaan daerah rawan kriminalitas di Kecamatan Cepu & Padangan, Kabupaten Blora.</p>
+      <p class="about-desc">
+        Sistem informasi geografis untuk pemetaan daerah rawan kriminalitas 
+        di Kecamatan Cepu & Padangan, Kabupaten Blora.
+      </p>
       <div class="info-note">
-        <i class="fas fa-info-circle"></i> Sistem melacak lokasi Anda secara real-time. Laporan hanya dapat dikirim jika Anda berada di dalam wilayah Cepu atau Padangan.
+        <i class="fas fa-info-circle"></i> Sistem melacak lokasi Anda secara real-time. 
+        Laporan hanya dapat dikirim jika Anda berada di dalam wilayah Cepu atau Padangan.
       </div>
       <div class="contact-grid">
         <div class="contact-card">
@@ -268,16 +278,11 @@
     </div>
   </div>
 
-  <!-- TOAST -->
+  <!-- TOAST CONTAINER -->
   <div id="toast-container"></div>
 
 </div>
 
-<!-- ==================== LEAFET JS ==================== -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<!-- ==================== SCRIPT JS ==================== -->
 <script src="script.js"></script>
-
 </body>
 </html>
