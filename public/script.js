@@ -1,5 +1,5 @@
 // ==================== KONFIGURASI ====================
-const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycby8dIleiZo_zj0ufeKY_Ulp9632Me5xFdeX2mPV6G2qdM_Tf3P9WvrtLck02D4otYYJ/exec';
+const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycby6mZMrNI8E1H_fh3SSi8SX6fF2kvUsV3BBiAUg9m5nLYuTOEtwD2OPgRiSOG1AjQHL/exec';
 
 const CAT_COLORS = {
   pembunuhan: '#ef5350',
