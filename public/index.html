@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>E-KRIMMAP — Peta Rawan Kriminalitas</title>
 
-<!-- LEAFET CSS - PASTIKAN INI PERTAMA -->
+<!-- LEAFET CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <!-- FONTS -->
@@ -273,27 +273,11 @@
 
 </div>
 
-<!-- ==================== LEAFET JS - WAJIB DI SINI ==================== -->
+<!-- ==================== LEAFET JS ==================== -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <!-- ==================== SCRIPT JS ==================== -->
 <script src="script.js"></script>
-
-<!-- ==================== EMERGENCY FALLBACK ==================== -->
-<script>
-  // Emergency: Jika map tidak muncul dalam 5 detik, force refresh
-  setTimeout(function() {
-    var mapElement = document.getElementById('map');
-    if (mapElement && !window._mapLoaded) {
-      console.warn('⚠️ Map not loaded, forcing refresh...');
-      location.reload();
-    }
-  }, 5000);
-  
-  // Cek apakah Leaflet terload
-  console.log('📦 Leaflet loaded:', typeof L !== 'undefined');
-  console.log('📦 Map element:', document.getElementById('map'));
-</script>
 
 </body>
 </html>
