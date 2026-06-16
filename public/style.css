@@ -1469,7 +1469,7 @@ body::before {
   color: var(--accent);
 }
 
-/* Animation for pulse marker - MATCH WITH JS */
+/* Animation for pulse marker */
 @keyframes pulseMarker {
   0%, 100% { 
     transform: scale(1); 
