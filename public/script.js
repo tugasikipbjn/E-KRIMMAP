@@ -968,6 +968,7 @@ function updateStatsFromData(data) {
   const sCepu = document.getElementById('s-cepu');
   
   if (sTotal) sTotal.textContent = data.length;
+  // BUG FIX: severity dari sheet adalah string, bukan angka
   if (sTinggi) sTinggi.textContent = data.filter(d => d.severity === 'tinggi').length;
   if (sSedang) sSedang.textContent = data.filter(d => d.severity === 'sedang').length;
   if (sCepu) sCepu.textContent = data.filter(d => d.kecamatan === 'cepu').length;
@@ -1165,24 +1166,72 @@ function renderStatistik() {
   CATS.forEach(c => catCounts[c] = data.filter(d => d.kategori === c).length);
   const maxCount = Math.max(...Object.values(catCounts), 1);
   const total = data.length;
-  const tinggi = data.filter(d => d.severity === 'tinggi').length;
+  // BUG FIX: severity dari sheet adalah string 'tinggi'/'sedang'/'rendah'
+  const tinggi  = data.filter(d => d.severity === 'tinggi').length;
+  const sedang  = data.filter(d => d.severity === 'sedang').length;
+  const rendah  = data.filter(d => d.severity === 'rendah').length;
+  const totalCepu     = data.filter(d => d.kecamatan === 'cepu').length;
+  const totalPadangan = data.filter(d => d.kecamatan === 'padangan').length;
+  const maxKec = Math.max(totalCepu, totalPadangan, 1);
 
   container.innerHTML = `
     <div class="animate-in">
       <div class="chart-container glass-light">
         <div class="widget-title">Distribusi Kategori</div>
         <div style="display:flex;flex-direction:column;gap:14px;margin-top:18px;">
-          ${CATS.map(k => `
-            <div style="display:flex;align-items:center;gap:14px;">
+          ${CATS.map(k => {
+            const pct = total > 0 ? ((catCounts[k] / total) * 100).toFixed(0) : 0;
+            return `
+            <div style="display:flex;align-items:center;gap:10px;">
               <div style="width:90px;font-size:12px;color:var(--tx2);font-weight:600;">${CAT_LABELS[k]}</div>
               <div style="flex:1;height:10px;background:var(--card-bg);border-radius:5px;overflow:hidden;border:1px solid var(--border-color);">
                 <div style="width:${(catCounts[k] / maxCount) * 100}%;height:100%;background:${CAT_COLORS[k]};border-radius:5px;"></div>
               </div>
-              <div style="width:35px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--tx1);font-weight:700;">${catCounts[k]}</div>
-            </div>
-          `).join('')}
+              <div style="width:28px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--tx1);font-weight:700;">${catCounts[k]}</div>
+              <div style="width:34px;font-size:10px;color:var(--tx3);">(${pct}%)</div>
+            </div>`;
+          }).join('')}
         </div>
       </div>
+
+      <div class="chart-container glass-light">
+        <div class="widget-title">Tingkat Risiko</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px;">
+          <div style="padding:14px 10px;background:var(--red-glow);border-radius:14px;border:2px solid var(--red);text-align:center;">
+            <div style="font-size:28px;font-weight:800;color:var(--red);">${tinggi}</div>
+            <div style="font-size:10px;color:var(--tx3);margin-top:4px;font-weight:700;letter-spacing:0.5px;">TINGGI</div>
+          </div>
+          <div style="padding:14px 10px;background:rgba(255,202,40,0.12);border-radius:14px;border:2px solid #ffca28;text-align:center;">
+            <div style="font-size:28px;font-weight:800;color:#ffca28;">${sedang}</div>
+            <div style="font-size:10px;color:var(--tx3);margin-top:4px;font-weight:700;letter-spacing:0.5px;">SEDANG</div>
+          </div>
+          <div style="padding:14px 10px;background:rgba(102,187,106,0.12);border-radius:14px;border:2px solid #66bb6a;text-align:center;">
+            <div style="font-size:28px;font-weight:800;color:#66bb6a;">${rendah}</div>
+            <div style="font-size:10px;color:var(--tx3);margin-top:4px;font-weight:700;letter-spacing:0.5px;">RENDAH</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-container glass-light">
+        <div class="widget-title">Per Kecamatan</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:80px;font-size:12px;color:var(--tx2);font-weight:600;">Cepu</div>
+            <div style="flex:1;height:12px;background:var(--card-bg);border-radius:6px;overflow:hidden;border:1px solid var(--border-color);">
+              <div style="width:${(totalCepu / maxKec) * 100}%;height:100%;background:#4fc3f7;border-radius:6px;"></div>
+            </div>
+            <div style="width:28px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--tx1);font-weight:700;">${totalCepu}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:80px;font-size:12px;color:var(--tx2);font-weight:600;">Padangan</div>
+            <div style="flex:1;height:12px;background:var(--card-bg);border-radius:6px;overflow:hidden;border:1px solid var(--border-color);">
+              <div style="width:${(totalPadangan / maxKec) * 100}%;height:100%;background:#7e57c2;border-radius:6px;"></div>
+            </div>
+            <div style="width:28px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--tx1);font-weight:700;">${totalPadangan}</div>
+          </div>
+        </div>
+      </div>
+
       <div class="chart-container glass-light">
         <div class="widget-title">Ringkasan</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;">
