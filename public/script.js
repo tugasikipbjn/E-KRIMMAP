@@ -612,10 +612,15 @@ async function fetchVerifiedData() {
   try {
     const url = new URL(GOOGLE_SHEET_API_URL);
     url.searchParams.append('action', 'getVerified');
+    // FIX: cache-busting agar browser tidak pakai response lama yang di-cache
+    url.searchParams.append('_t', Date.now());
     
     console.log('📡 Fetching verified data:', url.toString());
     
-    const response = await fetch(url.toString(), { method: 'GET' });
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      cache: 'no-store'
+    });
     if (!response.ok) throw new Error('HTTP ' + response.status);
     
     const result = await response.json();
@@ -817,7 +822,7 @@ async function initApp() {
   setInterval(async () => {
     await fetchVerifiedData();
     await renderRiwayat();
-  }, 30000);
+  }, 10000);
 }
 
 /* ═══════════════════ MAP ═══════════════════ */
