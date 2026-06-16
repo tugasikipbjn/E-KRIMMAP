@@ -1,5 +1,5 @@
 // ==================== GOOGLE SHEETS CONFIG ====================
-const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxan7JrR9PcA6wKQQcG2y4UCqOaKN5A1SojQF2ktV6gCG8mDxAdSq001Lmwhwj1L-P5/exec';
+const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycby8dIleiZo_zj0ufeKY_Ulp9632Me5xFdeX2mPV6G2qdM_Tf3P9WvrtLck02D4otYYJ/exec';
 
 // ==================== LINGKARAN VALIDASI ====================
 const VALIDATION_CIRCLES = {
@@ -64,13 +64,13 @@ let state = {
   activeFilters: new Set(),
   map: null,
   markers: [],
-  pendingMarkers: [], // marker untuk laporan pending
-  verifiedMarkers: [], // marker untuk laporan terverifikasi
+  pendingMarkers: [],
+  verifiedMarkers: [],
   currentPanel: null,
   currentTheme: 'arctic',
   currentTileLayer: null,
   allData: [],
-  pendingData: [], // data laporan pending
+  pendingData: [],
   validationCircles: [],
   currentLocation: null,
   locationWatchId: null,
@@ -288,15 +288,27 @@ function updateLocationUI(lat, lng) {
       liveStatusText.style.color = 'var(--red)';
     }
     if (liveDistanceText) {
-      liveDistanceText.textContent = '';
+      liveDistanceText.textContent = '⚠️ Hanya melihat marker';
+      liveDistanceText.style.color = 'var(--red)';
     }
     
+    // 🔴 PERUBAHAN: TETAP TAMPILKAN MARKER walaupun di luar area
+    // Tombol submit tetap aktif dengan peringatan
     if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.classList.add('disabled');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('disabled');
     }
-    if (disabledMsg) disabledMsg.style.display = 'block';
-    if (outsideWarning) outsideWarning.style.display = 'flex';
+    if (disabledMsg) disabledMsg.style.display = 'none';
+    if (outsideWarning) {
+      outsideWarning.style.display = 'flex';
+      outsideWarning.innerHTML = `
+        <i class="fas fa-info-circle"></i>
+        <div>
+          <strong>ℹ️ Anda berada di luar wilayah layanan</strong><br>
+          <small>Anda tetap dapat melihat semua marker di peta, tetapi laporan hanya dapat dikirim dari dalam wilayah Cepu atau Padangan.</small>
+        </div>
+      `;
+    }
   }
   
   validateCurrentLocation();
@@ -501,7 +513,7 @@ async function sendToGoogleSheets(data) {
       url.searchParams.append('longitude', data.longitude || '');
       url.searchParams.append('severity', data.severity || 'sedang');
       url.searchParams.append('sumber', data.sumber || 'Mobile');
-      url.searchParams.append('status', 'pending'); // Set status awal pending
+      url.searchParams.append('status', 'pending');
       
       console.log('🌐 Fetch URL:', url.toString());
       
@@ -512,7 +524,6 @@ async function sendToGoogleSheets(data) {
       
       console.log('✅ Request sent');
       
-      // Simpan ke localStorage sebagai pending
       const pendingReport = {
         ...data,
         status: 'pending',
@@ -520,8 +531,6 @@ async function sendToGoogleSheets(data) {
         timestamp: new Date().toISOString()
       };
       savePendingReport(pendingReport);
-      
-      // Tambahkan marker pending ke peta
       addPendingMarker(pendingReport);
       
       resolve({ success: true, pending: true });
@@ -601,7 +610,6 @@ async function sendToGoogleSheets(data) {
 function savePendingReport(report) {
   try {
     let pending = JSON.parse(localStorage.getItem('ekrimmap_pending_reports') || '[]');
-    // Cek duplikat berdasarkan koordinat + timestamp
     const exists = pending.some(p => 
       p.latitude === report.latitude && 
       p.longitude === report.longitude &&
@@ -732,11 +740,13 @@ function renderAllMarkers() {
   
   // Render pending markers dari localStorage
   const pendingReports = getPendingReports();
+  console.log('📌 Rendering pending markers:', pendingReports.length);
   pendingReports.forEach(report => {
     addPendingMarker(report);
   });
   
   // Render verified markers dari data
+  console.log('📌 Rendering verified markers:', state.allData.length);
   state.allData.forEach(item => {
     addVerifiedMarker(item);
   });
@@ -852,7 +862,6 @@ async function submitLaporan() {
       addNotification('Laporan Terkirim - Menunggu Verifikasi', 
         `${CAT_LABELS[kategori]} di ${lokasi} telah dikirim dan menunggu verifikasi admin.`, 'info');
       
-      // Kosongkan form
       const formFields = ['f-kategori', 'f-lokasi', 'f-deskripsi', 'f-pelapor'];
       formFields.forEach(id => {
         const el = document.getElementById(id);
@@ -935,7 +944,7 @@ async function initApp() {
   if (!notifs.length) {
     addNotification(
       'Selamat Datang di E-KRIMMAP',
-      'Sistem pemetaan kriminalitas Kecamatan Cepu & Padangan siap digunakan.\nLokasi Anda akan terdeteksi otomatis. Laporan akan muncul sebagai marker PENDING (kuning) sampai diverifikasi admin.',
+      'Sistem pemetaan kriminalitas Kecamatan Cepu & Padangan siap digunakan.\nLokasi Anda akan terdeteksi otomatis. Laporan akan muncul sebagai marker PENDING (kuning) sampai diverifikasi admin.\n\nAnda dapat melihat semua marker meskipun berada di luar wilayah layanan.',
       'welcome'
     );
   }
@@ -954,7 +963,6 @@ async function initApp() {
   
   startLocationTracking();
   
-  // Auto sync setiap 15 detik untuk update status verifikasi
   setInterval(async () => {
     await fetchVerifiedData();
     await renderRiwayat();
@@ -1048,7 +1056,7 @@ function initFilters() {
 }
 
 function applyFilters() {
-  // Sembunyikan marker yang tidak sesuai filter
+  // Sembunyikan semua marker
   state.pendingMarkers.forEach(m => {
     if (state.map) state.map.removeLayer(m);
   });
@@ -1056,6 +1064,10 @@ function applyFilters() {
     if (state.map) state.map.removeLayer(m);
   });
   
+  state.pendingMarkers = [];
+  state.verifiedMarkers = [];
+  
+  // Tampilkan sesuai filter
   const pendingReports = getPendingReports();
   pendingReports.forEach(report => {
     if (state.activeFilters.size === 0 || state.activeFilters.has(report.kategori)) {
@@ -1234,7 +1246,6 @@ async function renderRiwayat() {
     const data = await fetchVerifiedData();
     const pendingReports = getPendingReports();
 
-    // Gabungkan pending + verified
     const allItems = [
       ...pendingReports.map(p => ({ ...p, status: 'pending', _type: 'pending' })),
       ...data.map(d => ({ ...d, status: 'verified', _type: 'verified' }))
@@ -1250,7 +1261,6 @@ async function renderRiwayat() {
       return;
     }
 
-    // Urutkan dari yang terbaru
     allItems.sort((a, b) => new Date(b.timestamp || b.tanggal_kejadian) - new Date(a.timestamp || a.tanggal_kejadian));
 
     container.innerHTML = allItems.map(item => {
