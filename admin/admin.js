@@ -264,10 +264,14 @@ function renderDashboard() {
   const processedElement = document.getElementById('statProcessed');
   const completedElement = document.getElementById('statCompleted');
   
+  // BUG FIX: total = verified + pending (bukan data+reports mentah)
   if (totalElement) totalElement.textContent = data.length + reports.length;
-  if (pendingElement) pendingElement.textContent = reports.filter(r => r.status === 'pending').length;
-  if (processedElement) processedElement.textContent = reports.filter(r => r.status === 'processed').length;
-  if (completedElement) completedElement.textContent = data.filter(d => d.status === 'verified').length;
+  // BUG FIX: pending dihitung dari reportsStore (status 'pending')
+  if (pendingElement) pendingElement.textContent = reports.length;
+  // BUG FIX: 'processed' tidak ada di sheet; tampilkan risiko tinggi sebagai gantinya
+  if (processedElement) processedElement.textContent = data.filter(d => d.severity === 3).length;
+  // BUG FIX: verified = semua yang ada di dataStore
+  if (completedElement) completedElement.textContent = data.length;
   
   const kecamatanData = {
     cepu: data.filter(d => d.kecamatan === 'cepu').length,
@@ -286,16 +290,55 @@ function renderDashboard() {
   const categoryCounts = {};
   CATEGORIES.forEach(cat => { categoryCounts[cat] = data.filter(d => d.kategori === cat).length; });
   const totalCat = data.length || 1;
-  
-  let legendHtml = '';
-  CATEGORIES.forEach(cat => {
-    const count = categoryCounts[cat];
-    const percentage = (count / totalCat) * 100;
-    legendHtml += `<div class="legend-item"><div class="legend-color" style="background: ${CAT_COLORS[cat]}"></div><div class="legend-label">${CAT_LABELS[cat]}</div><div class="legend-value">${count} (${percentage.toFixed(0)}%)</div></div>`;
-  });
-  
+
+  // BUG FIX: Render donut SVG pie chart yang benar + legend
   const categoryChart = document.getElementById('categoryChart');
-  if (categoryChart) categoryChart.innerHTML = `<div class="pie-legend">${legendHtml}</div>`;
+  if (categoryChart) {
+    // Hitung slice donut SVG
+    const cx = 70, cy = 70, r = 55, stroke = 28;
+    const circumference = 2 * Math.PI * r;
+    let offset = 0;
+    const slices = CATEGORIES.map(cat => {
+      const count = categoryCounts[cat];
+      const pct = count / totalCat;
+      const dash = pct * circumference;
+      const slice = { cat, count, pct, dash, offset };
+      offset += dash;
+      return slice;
+    }).filter(s => s.count > 0);
+
+    const svgSlices = slices.map(s => `
+      <circle cx="${cx}" cy="${cy}" r="${r}"
+        fill="none"
+        stroke="${CAT_COLORS[s.cat]}"
+        stroke-width="${stroke}"
+        stroke-dasharray="${s.dash} ${circumference - s.dash}"
+        stroke-dashoffset="${-s.offset}"
+        transform="rotate(-90 ${cx} ${cy})"
+      />`).join('');
+
+    const legendHtml = CATEGORIES.map(cat => {
+      const count = categoryCounts[cat];
+      const pct = ((count / totalCat) * 100).toFixed(0);
+      return `<div class="legend-item">
+        <div class="legend-color" style="background:${CAT_COLORS[cat]}"></div>
+        <div class="legend-label">${CAT_LABELS[cat]}</div>
+        <div class="legend-value">${count} (${pct}%)</div>
+      </div>`;
+    }).join('');
+
+    categoryChart.innerHTML = `
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <svg width="140" height="140" viewBox="0 0 140 140" style="flex-shrink:0;">
+          ${data.length === 0
+            ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#e2e8f0" stroke-width="${stroke}"/>`
+            : svgSlices}
+          <text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="18" font-weight="800" fill="#1e293b">${totalCat}</text>
+          <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="9" fill="#64748b">TOTAL</text>
+        </svg>
+        <div class="pie-legend" style="flex:1;">${legendHtml}</div>
+      </div>`;
+  }
   
   const kecList = document.getElementById('kecamatanList');
   if (kecList) {
@@ -312,7 +355,15 @@ function renderStatistics() {
   const catCounts = {};
   CATEGORIES.forEach(c => catCounts[c] = data.filter(d => d.kategori === c).length);
   const maxCount = Math.max(...Object.values(catCounts), 1);
-  
+
+  // BUG FIX: severity di dataStore sudah dikonversi ke angka (1/2/3) saat syncDataFromSheet
+  const totalTinggi  = data.filter(d => d.severity === 3).length;
+  const totalSedang  = data.filter(d => d.severity === 2).length;
+  const totalRendah  = data.filter(d => d.severity === 1).length;
+  const totalCepu    = data.filter(d => d.kecamatan === 'cepu').length;
+  const totalPadangan= data.filter(d => d.kecamatan === 'padangan').length;
+  const maxKec       = Math.max(totalCepu, totalPadangan, 1);
+
   container.innerHTML = `
     <div class="charts-row">
       <div class="chart-card">
@@ -321,17 +372,54 @@ function renderStatistics() {
           ${CATEGORIES.map(k => `
             <div style="display:flex;align-items:center;gap:14px;">
               <div style="width:90px;font-size:12px;font-weight:600;">${CAT_LABELS[k]}</div>
-              <div style="flex:1;height:10px;background:#f1f5f9;border-radius:5px;overflow:hidden;"><div style="width:${(catCounts[k] / maxCount) * 100}%;height:100%;background:${CAT_COLORS[k]};border-radius:5px;"></div></div>
+              <div style="flex:1;height:10px;background:#f1f5f9;border-radius:5px;overflow:hidden;">
+                <div style="width:${(catCounts[k] / maxCount) * 100}%;height:100%;background:${CAT_COLORS[k]};border-radius:5px;"></div>
+              </div>
               <div style="width:35px;text-align:right;font-size:12px;font-weight:700;">${catCounts[k]}</div>
             </div>
           `).join('')}
         </div>
       </div>
+
       <div class="chart-card">
         <div class="chart-title">Ringkasan</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div style="padding:20px;background:rgba(59,130,246,0.1);border-radius:16px;border:2px solid #3b82f6;text-align:center;"><div style="font-size:36px;font-weight:800;color:#3b82f6;">${data.length}</div><div style="font-size:11px;color:#64748b;">TOTAL KEJADIAN</div></div>
-          <div style="padding:20px;background:rgba(239,68,68,0.1);border-radius:16px;border:2px solid #ef4444;text-align:center;"><div style="font-size:36px;font-weight:800;color:#ef4444;">${data.filter(d => d.severity == 3).length}</div><div style="font-size:11px;color:#64748b;">RISIKO TINGGI</div></div>
+          <div style="padding:20px;background:rgba(59,130,246,0.1);border-radius:16px;border:2px solid #3b82f6;text-align:center;">
+            <div style="font-size:36px;font-weight:800;color:#3b82f6;">${data.length}</div>
+            <div style="font-size:11px;color:#64748b;">TOTAL KEJADIAN</div>
+          </div>
+          <div style="padding:20px;background:rgba(239,68,68,0.1);border-radius:16px;border:2px solid #ef4444;text-align:center;">
+            <div style="font-size:36px;font-weight:800;color:#ef4444;">${totalTinggi}</div>
+            <div style="font-size:11px;color:#64748b;">RISIKO TINGGI</div>
+          </div>
+          <div style="padding:20px;background:rgba(245,158,11,0.1);border-radius:16px;border:2px solid #f59e0b;text-align:center;">
+            <div style="font-size:36px;font-weight:800;color:#f59e0b;">${totalSedang}</div>
+            <div style="font-size:11px;color:#64748b;">RISIKO SEDANG</div>
+          </div>
+          <div style="padding:20px;background:rgba(16,185,129,0.1);border-radius:16px;border:2px solid #10b981;text-align:center;">
+            <div style="font-size:36px;font-weight:800;color:#10b981;">${totalRendah}</div>
+            <div style="font-size:11px;color:#64748b;">RISIKO RENDAH</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Per Kecamatan</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:90px;font-size:12px;font-weight:600;">Cepu</div>
+            <div style="flex:1;height:14px;background:#f1f5f9;border-radius:7px;overflow:hidden;">
+              <div style="width:${(totalCepu / maxKec) * 100}%;height:100%;background:#4fc3f7;border-radius:7px;"></div>
+            </div>
+            <div style="width:35px;text-align:right;font-size:12px;font-weight:700;">${totalCepu}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:90px;font-size:12px;font-weight:600;">Padangan</div>
+            <div style="flex:1;height:14px;background:#f1f5f9;border-radius:7px;overflow:hidden;">
+              <div style="width:${(totalPadangan / maxKec) * 100}%;height:100%;background:#7e57c2;border-radius:7px;"></div>
+            </div>
+            <div style="width:35px;text-align:right;font-size:12px;font-weight:700;">${totalPadangan}</div>
+          </div>
         </div>
       </div>
     </div>
