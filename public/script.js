@@ -1,4 +1,5 @@
 // ==================== KONFIGURASI ====================
+// GANTI DENGAN URL DEPLOY GAS ANDA
 const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycby6mZMrNI8E1H_fh3SSi8SX6fF2kvUsV3BBiAUg9m5nLYuTOEtwD2OPgRiSOG1AjQHL/exec';
 
 const CAT_COLORS = {
@@ -42,7 +43,6 @@ let state = {
 document.addEventListener('DOMContentLoaded', function() {
   console.log('🚀 Document loaded');
   
-  // Progress boot
   var bar = document.getElementById('boot-bar');
   var msg = document.getElementById('boot-msg');
   var pct = 0;
@@ -73,28 +73,20 @@ function initApp() {
   console.log('🚀 initApp() called');
   console.log('📦 Leaflet available:', typeof L !== 'undefined');
   
-  // Cek Leaflet
   if (typeof L === 'undefined') {
     console.error('❌ Leaflet not loaded!');
     showToast('Leaflet tidak terload, refresh halaman', 'error');
     return;
   }
   
-  // Buat map
   createMap();
-  
-  // Setup filter
   setupFilters();
-  
-  // Setup legend
   setupLegend();
   
-  // Load data
   setTimeout(function() {
     loadData();
   }, 1000);
   
-  // Auto refresh
   setInterval(function() {
     loadData();
   }, 30000);
@@ -111,20 +103,17 @@ function createMap() {
   }
   
   try {
-    // Buat map dengan view Cepu
     state.map = L.map('map', {
       zoomControl: false,
       attributionControl: false
     }).setView([-7.147, 111.585], 13);
     
-    // Tile layer - CartoDB Dark
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap © CartoDB',
       subdomains: 'abcd',
       maxZoom: 19
     }).addTo(state.map);
     
-    // Zoom control
     L.control.zoom({
       position: 'bottomright'
     }).addTo(state.map);
@@ -152,7 +141,6 @@ function createMap() {
     state.isMapReady = true;
     window._mapLoaded = true;
     
-    // Force resize setelah map dibuat
     setTimeout(function() {
       if (state.map) {
         state.map.invalidateSize();
@@ -198,7 +186,6 @@ function loadData() {
     
     console.log('✅ Received', result.data.length, 'records');
     
-    // Filter data yang valid
     var validData = result.data.filter(function(item) {
       var lat = parseFloat(item.latitude);
       var lng = parseFloat(item.longitude);
@@ -235,15 +222,16 @@ function renderMarkers(data) {
     return;
   }
   
-  // Hapus marker lama
   state.markers.forEach(function(m) {
     if (state.map) state.map.removeLayer(m);
   });
   state.markers = [];
   
-  if (!data || data.length === 0) return;
+  if (!data || data.length === 0) {
+    updateMapInfo(0);
+    return;
+  }
   
-  // Filter
   var filtered = state.activeFilters.size > 0
     ? data.filter(function(item) {
         return state.activeFilters.has(item.kategori);
@@ -255,7 +243,6 @@ function renderMarkers(data) {
     return;
   }
   
-  // Buat marker
   filtered.forEach(function(item, index) {
     var lat = parseFloat(item.latitude);
     var lng = parseFloat(item.longitude);
@@ -266,7 +253,6 @@ function renderMarkers(data) {
     var color = CAT_COLORS[kategori] || '#90a4ae';
     var size = item.severity === 'tinggi' ? 28 : (item.severity === 'sedang' ? 20 : 14);
     
-    // Icon marker
     var icon = L.divIcon({
       html: '<div style="' +
         'width:' + size + 'px;' +
@@ -284,7 +270,6 @@ function renderMarkers(data) {
     
     var marker = L.marker([lat, lng], { icon: icon });
     
-    // Popup
     marker.bindPopup(
       '<div style="min-width:180px;">' +
         '<strong style="color:' + color + '">' + (CAT_LABELS[kategori] || kategori) + '</strong><br>' +
@@ -298,7 +283,6 @@ function renderMarkers(data) {
   });
   
   updateMapInfo(state.markers.length);
-  
   console.log('✅ Created', state.markers.length, 'markers');
 }
 
@@ -361,7 +345,6 @@ function setupFilters() {
     container.appendChild(btn);
   });
   
-  // Reset button
   var resetBtn = document.createElement('button');
   resetBtn.className = 'filter-reset-btn';
   resetBtn.innerHTML = '<i class="fas fa-undo"></i> Reset';
@@ -606,13 +589,6 @@ function refreshLocation() {
 
 function submitLaporan() {
   showToast('Fitur laporan sedang dikembangkan', 'info');
-}
-
-function toggleSidebar() {
-  var panel = document.getElementById('panel-riwayat');
-  var overlay = document.getElementById('overlay-riwayat');
-  if (panel) panel.classList.toggle('open');
-  if (overlay) overlay.classList.toggle('show');
 }
 
 // ==================== EXPOSE GLOBAL ====================
