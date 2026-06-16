@@ -332,9 +332,9 @@
       line-height: 1.6;
     }
 
-    /* CTA */
+    /* CTA – tanpa tombol BUKA PETA, hanya teks */
     .cta-section {
-      padding: 70px 20px;
+      padding: 70px 20px 60px;
       text-align: center;
       position: relative;
       z-index: 1;
@@ -351,7 +351,7 @@
       font-family: 'Space Mono', monospace;
       font-size: 0.7rem;
       color: var(--muted);
-      margin-bottom: 32px;
+      margin-bottom: 0;
       line-height: 1.7;
     }
     .cta-section .section-tag { justify-content: center; }
@@ -431,6 +431,7 @@
         padding: 8px 18px;
         font-size: 0.65rem;
       }
+      .cta-section { padding: 80px 36px 70px; }
     }
 
     /* MOBILE ONLY */
@@ -467,6 +468,7 @@
         padding: 6px 12px;
         font-size: 0.55rem;
       }
+      .cta-section { padding: 50px 16px 40px; }
     }
 
     @media (max-height: 700px) and (max-width: 639px) {
@@ -541,14 +543,11 @@
   </div>
 </section>
 
-<!-- CALL TO ACTION -->
+<!-- CALL TO ACTION – tanpa tombol, hanya ajakan -->
 <section class="cta-section">
   <div class="section-tag">MULAI SEKARANG</div>
   <h2 class="cta-title">Pantau Keamanan<br>Wilayahmu</h2>
   <p class="cta-sub">Akses peta publik untuk melihat titik-titik rawan kriminalitas di wilayahmu.</p>
-  <div class="hero-actions">
-    <a href="public/index.html" class="btn-primary"><i class="fas fa-map"></i> BUKA PETA</a>
-  </div>
 </section>
 
 <!-- FOOTER -->
