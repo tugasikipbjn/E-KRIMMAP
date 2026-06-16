@@ -46,120 +46,40 @@
       z-index: 0;
     }
 
-    /* ─── NAVBAR (mobile-optimized) ─── */
-    nav {
+    /* ─── TOMBOL ADMIN DI ATAS (pojok kanan) ─── */
+    .admin-top-btn {
       position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 18px;
+      top: 16px;
+      right: 16px;
+      z-index: 200;
       background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-      transition: padding 0.2s;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.02);
-    }
-
-    .nav-logo {
-      font-size: 1.3rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      color: var(--text);
-    }
-    .nav-logo span { color: var(--accent); }
-
-    .nav-links {
-      display: flex;
-      gap: 1.5rem;
-      list-style: none;
-    }
-    .nav-links a {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.65rem;
-      color: var(--muted);
-      text-decoration: none;
-      letter-spacing: 0.06em;
-      font-weight: 600;
-      transition: color 0.2s;
-    }
-    .nav-links a:hover, .nav-links a:active { color: var(--accent); }
-
-    .nav-cta {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: #fff;
-      background: var(--accent);
-      border: none;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(0,102,204,0.25);
+      border-radius: 40px;
       padding: 8px 16px;
-      cursor: pointer;
-      text-decoration: none;
-      white-space: nowrap;
-      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
-      transition: opacity 0.2s, transform 0.05s;
-      display: inline-block;
-      box-shadow: 0 2px 8px rgba(0,102,204,0.2);
-    }
-    .nav-cta:active { opacity: 0.8; transform: scale(0.97); }
-
-    .nav-hamburger {
-      display: none;
-      flex-direction: column;
-      gap: 5px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 8px 4px;
-      z-index: 102;
-    }
-    .nav-hamburger span {
-      display: block;
-      width: 24px;
-      height: 2px;
-      background: var(--accent);
-      border-radius: 4px;
-      transition: all 0.25s ease;
-    }
-
-    .nav-drawer {
-      display: none;
-      position: fixed;
-      top: 56px;
-      left: 0;
-      right: 0;
-      background: rgba(255,255,255,0.98);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-      padding: 18px 20px 22px;
-      z-index: 99;
-      flex-direction: column;
-      gap: 4px;
-      box-shadow: 0 12px 24px rgba(0,0,0,0.04);
-    }
-    .nav-drawer.open { display: flex; }
-    .nav-drawer a {
       font-family: 'Space Mono', monospace;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--muted);
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: var(--accent);
       text-decoration: none;
-      letter-spacing: 0.08em;
-      padding: 14px 8px;
-      border-bottom: 1px solid rgba(0,102,204,0.08);
+      letter-spacing: 0.05em;
       display: flex;
       align-items: center;
-      gap: 12px;
-      transition: color 0.2s, background 0.1s;
-      border-radius: 8px;
+      gap: 6px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
     }
-    .nav-drawer a:active { background: rgba(0,102,204,0.06); color: var(--accent); }
-    .nav-drawer a.accent { color: var(--accent); }
+    .admin-top-btn i {
+      font-size: 0.7rem;
+    }
+    .admin-top-btn:hover, .admin-top-btn:active {
+      background: rgba(0,102,204,0.12);
+      border-color: var(--accent);
+      transform: scale(1.02);
+    }
 
-    /* ─── HERO SECTION ─── */
+    /* ─── HERO SECTION (tanpa navbar) ─── */
     .hero {
       position: relative;
       z-index: 1;
@@ -169,7 +89,7 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 100px 20px 70px;
+      padding: 80px 20px 60px;
       margin-top: 0;
       overflow: visible;
     }
@@ -473,40 +393,6 @@
     }
     .footer-links a:active { color: var(--accent); }
 
-    /* ─── TOMBOL ADMIN PANEL (cerah) ─── */
-    .admin-mini-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 200;
-      background: rgba(0,102,204,0.10);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(0,102,204,0.25);
-      border-radius: 40px;
-      padding: 8px 14px;
-      font-family: 'Space Mono', monospace;
-      font-size: 0.6rem;
-      font-weight: 600;
-      color: var(--accent);
-      text-decoration: none;
-      letter-spacing: 0.05em;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      background: #ffffffcc;
-    }
-    .admin-mini-btn i {
-      font-size: 0.7rem;
-    }
-    .admin-mini-btn:hover, .admin-mini-btn:active {
-      background: rgba(0,102,204,0.18);
-      border-color: var(--accent);
-      transform: scale(1.02);
-    }
-
     /* animasi */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(18px); }
@@ -515,11 +401,7 @@
 
     /* DESKTOP */
     @media (min-width: 640px) {
-      nav { padding: 16px 36px; }
-      .nav-hamburger { display: none !important; }
-      .nav-links { display: flex !important; }
-      .nav-cta { display: inline-block; }
-      .hero { padding: 130px 32px 80px; min-height: 90vh; }
+      .hero { padding: 100px 32px 80px; min-height: 90vh; }
       .hero-sub { max-width: 500px; font-size: 0.8rem; }
       .stats-bar { grid-template-columns: repeat(4, 1fr); }
       .stat-item { border-bottom: none; }
@@ -543,21 +425,18 @@
         padding: 28px 36px;
         text-align: left;
       }
-      .admin-mini-btn {
-        bottom: 24px;
+      .admin-top-btn {
+        top: 20px;
         right: 24px;
-        padding: 8px 16px;
+        padding: 8px 18px;
         font-size: 0.65rem;
       }
     }
 
     /* MOBILE ONLY */
     @media (max-width: 639px) {
-      .nav-links, .nav-cta { display: none; }
-      .nav-hamburger { display: flex; }
-      
       .hero {
-        padding: 100px 16px 60px;
+        padding: 80px 16px 50px;
         justify-content: center;
       }
       .hero-title {
@@ -582,16 +461,16 @@
         font-size: 0.65rem;
       }
       .step-num { width: 44px; height: 44px; min-width: 44px; }
-      .admin-mini-btn {
-        bottom: 16px;
-        right: 16px;
+      .admin-top-btn {
+        top: 12px;
+        right: 12px;
         padding: 6px 12px;
         font-size: 0.55rem;
       }
     }
 
     @media (max-height: 700px) and (max-width: 639px) {
-      .hero { padding: 80px 16px 40px; min-height: auto; }
+      .hero { padding: 70px 16px 30px; min-height: auto; }
       .hero-title { font-size: 1.9rem; }
     }
 
@@ -602,28 +481,14 @@
 </head>
 <body>
 
-<!-- NAVIGATION -->
-<nav>
-  <div class="nav-logo">E-KRIMM<span>AP</span></div>
-  <ul class="nav-links">
-    <li><a href="#cara-kerja">CARA KERJA</a></li>
-    <li><a href="public/index.html">PETA</a></li>
-  </ul>
-  <a href="public/index.html" class="nav-cta">BUKA PETA →</a>
-  <button class="nav-hamburger" id="hamburger" aria-label="Menu" onclick="toggleDrawer()">
-    <span></span><span></span><span></span>
-  </button>
-</nav>
+<!-- TOMBOL ADMIN DI ATAS (pojok kanan) -->
+<a href="admin/admin.html" class="admin-top-btn">
+  <i class="fas fa-lock"></i> ADMIN
+</a>
 
-<!-- MOBILE DRAWER -->
-<div class="nav-drawer" id="navDrawer">
-  <a href="#cara-kerja" onclick="closeDrawer()"><i class="fas fa-circle-info fa-fw"></i> Cara Kerja</a>
-  <a href="public/index.html"><i class="fas fa-map fa-fw"></i> Peta Publik</a>
-</div>
-
-<!-- HERO SECTION -->
+<!-- HERO SECTION (tanpa navbar) -->
 <section class="hero">
-  <div class="hero-badge">⬡ SISTEM INFORMASI GEOGRAFIS · BLORA</div>
+  <div class="hero-badge">⬡ SISTEM INFORMASI GEOGRAFIS</div>
   <h1 class="hero-title">
     PETA RAWAN<br>
     <span class="line2">KRIMINALITAS</span>
@@ -634,7 +499,7 @@
   </p>
   <div class="hero-actions">
     <a href="public/index.html" class="btn-primary">
-      <i class="fas fa-map"></i> LIHAT PETA
+      <i class="fas fa-map"></i> BUKA PETA
     </a>
     <a href="#cara-kerja" class="btn-secondary">
       <i class="fas fa-play"></i> CARA KERJA
@@ -682,39 +547,21 @@
   <h2 class="cta-title">Pantau Keamanan<br>Wilayahmu</h2>
   <p class="cta-sub">Akses peta publik untuk melihat titik-titik rawan kriminalitas di wilayahmu.</p>
   <div class="hero-actions">
-    <a href="public/index.html" class="btn-primary"><i class="fas fa-map"></i> PETA PUBLIK</a>
+    <a href="public/index.html" class="btn-primary"><i class="fas fa-map"></i> BUKA PETA</a>
   </div>
 </section>
 
 <!-- FOOTER -->
 <footer>
   <div class="footer-logo">E-KRIMM<span>AP</span></div>
-  <div class="footer-copy">© 2026 · KEC. CEPU & PADANGAN · KAB. BLORA</div>
+  <div class="footer-copy">© 2026 · KEC. CEPU & PADANGAN</div>
   <ul class="footer-links">
     <li><a href="public/index.html">Peta</a></li>
     <li><a href="tel:110">Darurat: 110</a></li>
   </ul>
 </footer>
 
-<!-- TOMBOL ADMIN PANEL (cerah) -->
-<a href="admin/admin.html" class="admin-mini-btn">
-  <i class="fas fa-lock"></i> ADMIN
-</a>
-
 <script>
-  // Drawer
-  function toggleDrawer() {
-    document.getElementById('navDrawer').classList.toggle('open');
-  }
-  function closeDrawer() {
-    document.getElementById('navDrawer').classList.remove('open');
-  }
-  document.addEventListener('click', (e) => {
-    const nav = document.querySelector('nav');
-    const drawer = document.getElementById('navDrawer');
-    if (!nav?.contains(e.target) && !drawer?.contains(e.target) && drawer.classList.contains('open')) closeDrawer();
-  });
-
   // ── LIVE STATS dari Google Sheets ──
   const SHEET_API = 'https://script.google.com/macros/s/AKfycby8dIleiZo_zj0ufeKY_Ulp9632Me5xFdeX2mPV6G2qdM_Tf3P9WvrtLck02D4otYYJ/exec';
 
