@@ -5,21 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>E-KRIMMAP — Peta Rawan Kriminalitas</title>
 
-<!-- Leaflet CSS - WAJIB di sini -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<!-- LEAFET CSS - PASTIKAN INI PERTAMA -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-<!-- Fonts -->
+<!-- FONTS -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800&family=JetBrains+Mono:wght@500;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Font Awesome -->
+<!-- FONT AWESOME -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<!-- Custom CSS -->
+<!-- STYLE CSS -->
 <link rel="stylesheet" href="style.css">
-
-<!-- Leaflet JS - WAJIB di sini SEBELUM script.js -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 </head>
 <body>
@@ -58,21 +55,23 @@
     </div>
   </header>
 
-  <!-- MAP - Pastikan container ini punya ukuran -->
-  <main id="map-container">
-    <div id="map" style="width:100%;height:100%;"></div>
-  </main>
+  <!-- MAP -->
+  <div id="map-container">
+    <div id="map"></div>
+  </div>
 
-  <!-- LIVE LOCATION INDICATOR -->
+  <!-- MAP INFO -->
+  <div id="map-info"></div>
+
+  <!-- LIVE LOCATION -->
   <div id="live-location-indicator" class="glass">
     <div class="live-dot"></div>
     <span id="live-status-text">Mendeteksi lokasi...</span>
     <span id="live-distance-text"></span>
   </div>
 
-  <!-- FLOATING WIDGETS -->
+  <!-- WIDGETS -->
   <aside class="widgets-container">
-    <!-- STATS WIDGET -->
     <div id="stats-widget" class="widget glass">
       <div class="widget-title">Live Stats</div>
       <div class="stat-grid">
@@ -95,14 +94,13 @@
       </div>
     </div>
 
-    <!-- LEGEND WIDGET -->
     <div id="legend-widget" class="widget glass">
       <div class="legend-title">Kategori</div>
       <div id="legend-items"></div>
     </div>
   </aside>
 
-  <!-- FILTER WIDGET -->
+  <!-- FILTER -->
   <aside id="filter-widget" class="widget glass">
     <div class="widget-title">Filter</div>
     <div class="filter-chips" id="filter-chips"></div>
@@ -131,7 +129,7 @@
     </button>
   </nav>
 
-  <!-- SIDE PANELS -->
+  <!-- PANELS -->
   <!-- LAPOR -->
   <div class="panel-overlay" id="overlay-lapor" onclick="closePanel('lapor')"></div>
   <div class="side-panel glass" id="panel-lapor">
@@ -140,11 +138,7 @@
       <button class="panel-close" onclick="closePanel('lapor')"><i class="fas fa-xmark"></i></button>
     </div>
     <div class="animate-in">
-      
-      <!-- STATUS LOKASI REAL-TIME -->
       <div id="location-status" style="display:none;"></div>
-      
-      <!-- PERINGATAN JIKA DI LUAR LINGKARAN -->
       <div id="outside-warning" style="display:none;" class="warning-banner">
         <i class="fas fa-circle-exclamation"></i>
         <div>
@@ -152,7 +146,6 @@
           <small>Laporan hanya dapat dikirim dari dalam wilayah Kecamatan Cepu atau Padangan.</small>
         </div>
       </div>
-      
       <div class="form-group">
         <label class="form-label">Jenis Kejadian</label>
         <select class="form-select" id="f-kategori">
@@ -165,7 +158,6 @@
           <option value="lainnya">Lainnya</option>
         </select>
       </div>
-      
       <div class="form-group">
         <label class="form-label">Kecamatan</label>
         <select class="form-select" id="f-kecamatan">
@@ -174,19 +166,16 @@
           <option value="padangan">Padangan</option>
         </select>
       </div>
-      
       <div class="form-group">
         <label class="form-label">Lokasi / Alamat</label>
         <input type="text" class="form-input" id="f-lokasi" placeholder="Jl. Pemuda No.10, Cepu">
       </div>
-      
       <div class="form-group">
         <label class="form-label">Tanggal Kejadian</label>
         <input type="date" class="form-input" id="f-tanggal">
       </div>
-      
       <div class="form-group">
-        <label class="form-label">Koordinat (Real-time)</label>
+        <label class="form-label">Koordinat</label>
         <div class="coord-inputs">
           <input type="text" class="form-input" id="f-lat" placeholder="Latitude" readonly>
           <input type="text" class="form-input" id="f-lng" placeholder="Longitude" readonly>
@@ -194,21 +183,15 @@
             <i class="fas fa-location-dot"></i>
           </button>
         </div>
-        <div style="font-size:10px; color:var(--tx3); margin-top:6px;">
-          <i class="fas fa-satellite-dish"></i> Lokasi Anda terdeteksi otomatis dan diperbarui setiap 3 detik.
-        </div>
       </div>
-      
       <div class="form-group">
         <label class="form-label">Deskripsi</label>
         <textarea class="form-textarea" id="f-deskripsi" placeholder="Ceritakan kejadian..." maxlength="500"></textarea>
       </div>
-      
       <div class="form-group">
         <label class="form-label">Nama Pelapor</label>
         <input type="text" class="form-input" id="f-pelapor" placeholder="Anonim">
       </div>
-      
       <button class="btn-glow" id="submit-btn" onclick="submitLaporan()">
         <i class="fas fa-paper-plane"></i> KIRIM LAPORAN
       </button>
@@ -248,13 +231,9 @@
     <div class="about-content">
       <div class="about-icon"><i class="fas fa-shield-halved"></i></div>
       <h2 class="about-title">E-KRIMMAP</h2>
-      <p class="about-desc">
-        Sistem informasi geografis untuk pemetaan daerah rawan kriminalitas 
-        di Kecamatan Cepu & Padangan, Kabupaten Blora.
-      </p>
+      <p class="about-desc">Sistem informasi geografis untuk pemetaan daerah rawan kriminalitas di Kecamatan Cepu & Padangan, Kabupaten Blora.</p>
       <div class="info-note">
-        <i class="fas fa-info-circle"></i> Sistem melacak lokasi Anda secara real-time. 
-        Laporan hanya dapat dikirim jika Anda berada di dalam wilayah Cepu atau Padangan.
+        <i class="fas fa-info-circle"></i> Sistem melacak lokasi Anda secara real-time. Laporan hanya dapat dikirim jika Anda berada di dalam wilayah Cepu atau Padangan.
       </div>
       <div class="contact-grid">
         <div class="contact-card">
@@ -289,37 +268,31 @@
     </div>
   </div>
 
-  <!-- TOAST CONTAINER -->
+  <!-- TOAST -->
   <div id="toast-container"></div>
 
 </div>
 
-<!-- SCRIPT JS - PASTIKAN DI SINI (SETELAH Leaflet) -->
+<!-- ==================== LEAFET JS - WAJIB DI SINI ==================== -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- ==================== SCRIPT JS ==================== -->
 <script src="script.js"></script>
 
-<!-- FALLBACK: Jika map tidak muncul, ini akan membantu -->
+<!-- ==================== EMERGENCY FALLBACK ==================== -->
 <script>
-  // Emergency fallback jika map tidak muncul
-  document.addEventListener('DOMContentLoaded', function() {
-    // Pastikan map container punya ukuran
-    var mapContainer = document.getElementById('map-container');
-    var mapDiv = document.getElementById('map');
-    
-    if (mapContainer && mapDiv) {
-      // Pastikan container punya ukuran
-      mapContainer.style.width = '100%';
-      mapContainer.style.height = '100%';
-      mapContainer.style.position = 'fixed';
-      mapContainer.style.top = '0';
-      mapContainer.style.left = '0';
-      mapContainer.style.zIndex = '0';
-      
-      mapDiv.style.width = '100%';
-      mapDiv.style.height = '100%';
+  // Emergency: Jika map tidak muncul dalam 5 detik, force refresh
+  setTimeout(function() {
+    var mapElement = document.getElementById('map');
+    if (mapElement && !window._mapLoaded) {
+      console.warn('⚠️ Map not loaded, forcing refresh...');
+      location.reload();
     }
-    
-    console.log('✅ HTML Loaded - Map container ready');
-  });
+  }, 5000);
+  
+  // Cek apakah Leaflet terload
+  console.log('📦 Leaflet loaded:', typeof L !== 'undefined');
+  console.log('📦 Map element:', document.getElementById('map'));
 </script>
 
 </body>
