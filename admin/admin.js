@@ -3,7 +3,7 @@
 // ==================== CONSTANTS ====================
 const ADMIN_PASS = 'admin123';
 
-const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzF99Ml5pC-sZDIXz_cr98iwTze1W5Z-iwkuRaKU-mVfXxVmwSMZ4IJEeImvKTET5fo/exec';
+const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbx_Feg8tyqgIaYe-lHryEYIo2Aa45rE9oPtqrJTY1Pbu0RJKdD6G2S8IMVkhEMo7csK/exec';
 
 const CATEGORIES = ['pencurian', 'kekerasan', 'narkoba', 'penipuan', 'pembunuhan', 'lainnya'];
 const CAT_LABELS = {
